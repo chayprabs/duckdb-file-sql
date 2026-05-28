@@ -146,6 +146,7 @@ function getWorkerLaunch(workerPort) {
 }
 
 function getWebLaunch(webPort) {
+  const cwd = path.join(ROOT, "packages", "web");
   if (process.platform === "win32") {
     return {
       command: "powershell",
@@ -159,9 +160,9 @@ function getWebLaunch(webPort) {
   }
 
   return {
-    command: "pnpm",
-    args: ["--filter", "@filesql/web", "dev", "--", "--host", "127.0.0.1", "--port", `${webPort}`, "--strictPort"],
-    cwd: ROOT,
+    command: path.join(cwd, "node_modules", ".bin", "vite"),
+    args: ["--host", "127.0.0.1", "--port", `${webPort}`, "--strictPort"],
+    cwd,
   };
 }
 
@@ -189,37 +190,82 @@ async function getAvailablePort() {
 }
 
 async function startOwnedService(url, name, command, args, extraEnv = {}, cwd = ROOT) {
-  const terminate = await startProcess(name, command, args, extraEnv, cwd);
-  await waitForUrl(url);
-  return terminate;
+  const service = await startProcess(name, command, args, extraEnv, cwd);
+  try {
+    await waitForUrl(url);
+    return service.terminate;
+  } catch (error) {
+    await service.terminate();
+    const output = service.readOutput();
+    if (output) {
+      throw new Error(`${error instanceof Error ? error.message : String(error)}\n${output}`);
+    }
+    throw error;
+  }
 }
 
 async function startProcess(name, command, args, extraEnv = {}, cwd = ROOT) {
+  const output = [];
+  let isStopping = false;
   const child = spawn(command, args, {
     cwd,
     detached: false,
     env: { ...process.env, ...extraEnv },
-    stdio: "ignore",
+    stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
 
+  child.stdout?.on("data", (chunk) => appendOutput(output, chunk));
+  child.stderr?.on("data", (chunk) => appendOutput(output, chunk));
+
   child.once("exit", (code) => {
-    if (code && code !== 0) {
+    if (!isStopping && code && code !== 0) {
       console.warn(`${name} exited early with code ${code}`);
     }
   });
 
-  return async () => {
-    await new Promise((resolve) => {
+  return {
+    readOutput() {
+      return output.join("").trim();
+    },
+    async terminate() {
       if (child.exitCode !== null || child.killed) {
-        resolve();
         return;
       }
-
-      child.once("exit", () => resolve());
-      child.kill();
-    });
+      isStopping = true;
+      await terminateChildProcess(child);
+    },
   };
+}
+
+function appendOutput(output, chunk) {
+  output.push(chunk.toString());
+  if (output.length > 50) {
+    output.shift();
+  }
+}
+
+async function terminateChildProcess(child) {
+  await new Promise((resolve) => {
+    child.once("exit", () => resolve());
+
+    if (process.platform === "win32") {
+      const killer = spawn("taskkill", ["/pid", `${child.pid}`, "/t", "/f"], {
+        stdio: "ignore",
+        windowsHide: true,
+      });
+      killer.once("exit", () => resolve());
+      killer.once("error", () => resolve());
+      return;
+    }
+
+    child.kill("SIGTERM");
+    setTimeout(() => {
+      if (child.exitCode === null && !child.killed) {
+        child.kill("SIGKILL");
+      }
+    }, 2_000).unref();
+  });
 }
 
 async function waitForUrl(url) {

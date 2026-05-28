@@ -35,6 +35,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `/sql-on-jsonl/`
   - `/sqlite-online-query/`
   - `/duckdb-online/`
+- Docker/local-run evidence:
+  - `docker compose config` resolves the worker service with `apps/worker/Dockerfile`, port `8000`, and `FILESQL_RETENTION_MINUTES=10`.
+  - `docker compose up -d worker` served `http://127.0.0.1:8000/health` with `{"status":"ok","extensions":["httpfs","sqlite_scanner","json"]}` before Docker Desktop returned a host-side API `500` during cleanup.
+- GitHub repository topics now include the full Section 7 SEO/discovery set: `duckdb`, `sql`, `csv`, `parquet`, `jsonl`, `sqlite`, `arrow`, `sql-over-files`, `wasm`, `duckdb-wasm`, `data-analysis`, `sql-playground`, `csv-sql`, `parquet-sql`, `browser-sql`, `online-tool`.
 - Section 7 local harness evidence from `artifacts/section7-report.json`:
   - Browser lazy-load: no DuckDB-WASM requests before first sample load; DuckDB-WASM assets requested after first sample load.
   - Browser-mode query network silence: no network requests fired while running the NYC taxi browser query after the sample was loaded.
@@ -75,6 +79,12 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [x] Bundle budget formally recorded against the 200 KB gz requirement.
 - [x] DuckDB-WASM lazy-load evidence captured in a reproducible report.
 
+### 7.3 Local run
+
+- [x] Browser mode works on first file drop.
+- [x] Worker health endpoint returned `200` locally.
+- [x] Worker DuckDB extensions loaded and reported on health/local run.
+
 ### 7.4 Functional - Format support
 
 - [x] CSV
@@ -106,6 +116,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [ ] Deployment evidence
 - [x] Docs and qualification ledger added in repo
 - [x] SEO route 200 checks
+- [x] Repo topics >= 10
 - [x] Acceptance fixture evidence
 - [x] Lighthouse >= 95
 - [x] Browser network-silence evidence

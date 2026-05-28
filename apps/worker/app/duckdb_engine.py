@@ -34,9 +34,7 @@ class DuckDbEngine:
         self.logger = logger or logging.getLogger("filesql.worker")
         self.storage_root = Path(storage_root or os.environ.get("FILESQL_WORKER_STORAGE_DIR", DEFAULT_STORAGE_DIR))
         self.storage_root.mkdir(parents=True, exist_ok=True)
-        self.retention_ttl_seconds = retention_ttl_seconds or int(
-            os.environ.get("FILESQL_RETENTION_TTL_SECONDS", DEFAULT_RETENTION_TTL_SECONDS)
-        )
+        self.retention_ttl_seconds = retention_ttl_seconds or _resolve_retention_ttl_seconds()
         self.loaded_extensions = self._load_extensions()
 
     def health(self) -> dict[str, object]:
@@ -252,6 +250,14 @@ def _normalize_identifier(value: str) -> str:
     if cleaned[0].isdigit():
         cleaned = f"t_{cleaned}"
     return cleaned
+
+
+def _resolve_retention_ttl_seconds() -> int:
+    if ttl_seconds := os.environ.get("FILESQL_RETENTION_TTL_SECONDS"):
+        return int(ttl_seconds)
+    if ttl_minutes := os.environ.get("FILESQL_RETENTION_MINUTES"):
+        return int(ttl_minutes) * 60
+    return DEFAULT_RETENTION_TTL_SECONDS
 
 
 def _sql_string_literal(value: str) -> str:

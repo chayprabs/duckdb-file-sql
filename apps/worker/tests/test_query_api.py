@@ -165,3 +165,12 @@ def test_worker_logs_query_metadata_without_sql_body(tmp_path, caplog) -> None:
     assert response.jobId in joined_logs
     assert "Query completed" in joined_logs
     assert "SELECT 42 AS answer" not in joined_logs
+
+
+def test_worker_accepts_retention_minutes_env(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("FILESQL_RETENTION_TTL_SECONDS", raising=False)
+    monkeypatch.setenv("FILESQL_RETENTION_MINUTES", "12")
+
+    engine = DuckDbEngine(storage_root=tmp_path / "artifacts")
+
+    assert engine.retention_ttl_seconds == 720

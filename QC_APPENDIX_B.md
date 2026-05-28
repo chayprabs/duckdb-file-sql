@@ -89,6 +89,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `npm pack --dry-run` in `packages/core` produced `chayprabs-duckdb-file-sql-0.1.0.tgz` with the expected README, declarations, source files, and package metadata.
   - `Release` workflow run `26607446202` completed successfully with `publish-core`, `pages`, `deploy-pages`, and `worker-image`.
   - `publish-core` logged `NPM_TOKEN is not configured; skipping npm publish.` and still completed successfully, so the remaining npm gap is credential + live publish evidence rather than workflow configuration.
+- PRD-aligned worker deployment config:
+  - `apps/worker/fly.toml` is now checked in for the Fly.io worker target, with `internal_port = 8000`, `/health` checks, HTTPS, zero-idle-machine autostart/autostop, `FILESQL_RETENTION_MINUTES = 10`, and an `8gb` shared VM profile.
 
 ### Qualification items still requiring fresh evidence
 
@@ -169,6 +171,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 - GitHub Pages is now serving the static web build from `gh-pages` at `https://chayprabs.github.io/duckdb-file-sql/`, and the repository homepage has been updated to that URL.
 - Root `render.yaml` is now checked in for a reproducible Render Blueprint deployment of the public FastAPI worker from `apps/worker`.
+- `apps/worker/fly.toml` is now checked in for a PRD-aligned Fly.io deployment path for the worker.
 - README screenshots are now checked in at `docs/screenshots/filesql-home.png` and `docs/screenshots/filesql-results.png`.
 - The release workflow now exists on `main` and includes GitHub Pages and GHCR publishing jobs via `workflow_dispatch`.
 - `Release` workflow run `26607031972` succeeded end-to-end on `main`:

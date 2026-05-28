@@ -74,17 +74,27 @@ cd apps/worker && python -m pytest
 
 The web app is a static Vite build in `packages/web/dist`. The worker is a FastAPI service and the repo ships `docker-compose.yml` for the hybrid local run path.
 
-For a public worker deployment, the repo now includes a root `render.yaml` Blueprint that publishes `apps/worker` as a Docker-backed Render web service with `/health` checks and the same `FILESQL_RETENTION_MINUTES=10` default used in local compose. The hosted GitHub Pages frontend can call that public worker by pasting the worker base URL into the "Remote URL / Worker" panel.
+For a public worker deployment, the repo now includes `apps/worker/fly.toml` for the PRD-aligned Fly.io target. It publishes the worker on port `8000`, uses `/health` checks, keeps the retention TTL at `10` minutes, enforces HTTPS, and starts from zero machines when idle. The hosted frontend can call that public worker by pasting the worker base URL into the "Remote URL / Worker" panel.
+
+Typical Fly.io flow:
+
+```bash
+cd apps/worker
+fly launch --no-deploy
+fly deploy
+```
+
+The repo also keeps a root `render.yaml` for an alternate Docker-backed worker deployment path.
 
 Typical Render flow:
 
 ```bash
-git add render.yaml
-git commit -m "Add Render deployment configuration"
+git add render.yaml apps/worker/fly.toml
+git commit -m "Add worker deployment configuration"
 git push origin main
 ```
 
-Then open the repo in Render Blueprint mode and apply the `filesql-worker` service definition from `render.yaml`.
+Then open the repo in Render Blueprint mode and apply the `filesql-worker` service definition from `render.yaml`, or deploy the worker directly from `apps/worker/fly.toml` with Fly.io.
 
 Checked-in UI screenshots live under `docs/screenshots/` so the GitHub README mirrors the current product surface instead of mockups.
 

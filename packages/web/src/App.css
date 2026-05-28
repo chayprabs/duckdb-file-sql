@@ -215,6 +215,27 @@ button,
   gap: 12px;
 }
 
+.schema-toolbar,
+.table-actions,
+.result-controls,
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.schema-toolbar {
+  flex-wrap: wrap;
+}
+
+.table-actions {
+  margin-top: 10px;
+}
+
+.danger-inline {
+  color: #f2a7a0;
+}
+
 .table-list span,
 .table-list small,
 .hint-strip,
@@ -236,6 +257,25 @@ th {
   background: rgba(245, 243, 237, 0.08);
   padding: 4px 8px;
   font-size: 0.78rem;
+}
+
+.sample-values {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sample-value-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(245, 243, 237, 0.04);
+}
+
+.sample-value-card span {
+  color: #d3d0c7;
+  word-break: break-word;
 }
 
 .sample-preview {
@@ -290,6 +330,21 @@ th {
   border: 1px solid rgba(213, 84, 59, 0.32);
 }
 
+.filter-field {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+}
+
+.filter-field input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 243, 237, 0.16);
+  background: rgba(240, 236, 227, 0.06);
+  color: inherit;
+  padding: 10px 12px;
+}
+
 .tab.active {
   background: rgba(246, 150, 64, 0.2);
 }
@@ -309,6 +364,14 @@ th {
   text-align: left;
   padding: 10px 0;
   border-bottom: 1px solid rgba(245, 243, 237, 0.08);
+}
+
+.column-sort-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 
 .empty-state {
@@ -342,5 +405,10 @@ th {
   .escalation-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .result-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

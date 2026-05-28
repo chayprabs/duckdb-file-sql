@@ -109,6 +109,44 @@ class DuckDbBrowserSession implements BrowserSession {
     };
   }
 
+  async renameTable(currentName: string, nextName: string): Promise<BrowserTableInfo> {
+    const normalizedName = deriveTableName(nextName);
+    if (currentName === normalizedName) {
+      const existing = this.registeredTables.get(currentName);
+      if (!existing) {
+        throw new Error(`Table ${currentName} is not loaded.`);
+      }
+      return existing;
+    }
+
+    if (this.registeredTables.has(normalizedName)) {
+      throw new Error(`A table named ${normalizedName} already exists.`);
+    }
+
+    const table = this.registeredTables.get(currentName);
+    if (!table) {
+      throw new Error(`Table ${currentName} is not loaded.`);
+    }
+
+    await this.connection.query(
+      `ALTER TABLE ${quoteIdentifier(currentName)} RENAME TO ${quoteIdentifier(normalizedName)}`,
+    );
+
+    this.registeredTables.delete(currentName);
+    const updatedTable = await this.describeTable(normalizedName, table.fileName, table.kind);
+    this.registeredTables.set(normalizedName, updatedTable);
+    return updatedTable;
+  }
+
+  async dropTable(tableName: string): Promise<void> {
+    if (!this.registeredTables.has(tableName)) {
+      throw new Error(`Table ${tableName} is not loaded.`);
+    }
+
+    await this.dropExistingTable(tableName);
+    this.registeredTables.delete(tableName);
+  }
+
   async close(): Promise<void> {
     await this.connection.close();
     await this.db.terminate();
@@ -225,6 +263,9 @@ class DuckDbBrowserSession implements BrowserSession {
       rowCount: Number(countRows[0]?.total ?? 0),
       columns,
       sample: sampleRows[0] ?? null,
+      sampleValues: Object.fromEntries(
+        columns.map((column) => [column.name, sampleRows[0]?.[column.name] ?? null]),
+      ),
     };
   }
 

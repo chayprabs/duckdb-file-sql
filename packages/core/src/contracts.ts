@@ -39,6 +39,7 @@ export interface BrowserTableInfo {
   rowCount: number;
   columns: BrowserColumn[];
   sample: Record<string, unknown> | null;
+  sampleValues: Record<string, unknown>;
 }
 
 export interface BrowserQueryResult {
@@ -55,6 +56,8 @@ export interface BrowserSession {
   listTables(): Promise<BrowserTableInfo[]>;
   loadFile(file: BrowserSourceFile): Promise<BrowserTableInfo[]>;
   query(sql: string): Promise<BrowserQueryResult>;
+  renameTable(currentName: string, nextName: string): Promise<BrowserTableInfo>;
+  dropTable(tableName: string): Promise<void>;
   close(): Promise<void>;
 }
 

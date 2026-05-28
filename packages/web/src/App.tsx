@@ -23,6 +23,7 @@ type SampleManifestItem = {
 
 const budgetInGb = `${Math.round(BROWSER_FILE_BUDGET_BYTES / 1024 / 1024 / 1024)} GB`;
 const defaultQuery = `SELECT COUNT(*) AS total_rows\nFROM nyc_taxi_sample;`;
+const RESULT_PAGE_SIZE = 25;
 
 function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -39,6 +40,12 @@ function App() {
   const [status, setStatus] = useState("Load a sample or local file to start querying.");
   const [error, setError] = useState<string | null>(null);
   const [showEscalationPrompt, setShowEscalationPrompt] = useState(false);
+  const [schemaCollapsed, setSchemaCollapsed] = useState(false);
+  const [filterText, setFilterText] = useState("");
+  const [page, setPage] = useState(0);
+  const [sortState, setSortState] = useState<{ columnIndex: number; direction: "asc" | "desc" } | null>(
+    null,
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -154,10 +161,44 @@ function App() {
       const session = await ensureBrowserSession();
       const queryResult = await session.query(query);
       setResult(queryResult);
+      setFilterText("");
+      setPage(0);
+      setSortState(null);
       setStatus(
         `Executed in browser with ${queryResult.rowCount} row${queryResult.rowCount === 1 ? "" : "s"} returned.`,
       );
       setTables(await session.listTables());
+    });
+  }
+
+  async function handleRenameTable(tableName: string) {
+    const nextName = window.prompt("Rename table", tableName)?.trim();
+    if (!nextName || nextName === tableName) {
+      return;
+    }
+
+    await runBusyTask(async () => {
+      const session = await ensureBrowserSession();
+      const updatedTable = await session.renameTable(tableName, nextName);
+      const nextTables = await session.listTables();
+      setTables(nextTables);
+      setStatus(`Renamed ${tableName} to ${updatedTable.name}.`);
+      setQuery((currentQuery) => currentQuery.replaceAll(tableName, updatedTable.name));
+    });
+  }
+
+  async function handleDropTable(tableName: string) {
+    if (!window.confirm(`Drop ${tableName} from the current session?`)) {
+      return;
+    }
+
+    await runBusyTask(async () => {
+      const session = await ensureBrowserSession();
+      await session.dropTable(tableName);
+      const nextTables = await session.listTables();
+      setTables(nextTables);
+      setStatus(`Dropped ${tableName} from the current browser session.`);
+      setResult(null);
     });
   }
 
@@ -172,6 +213,45 @@ function App() {
     } finally {
       setIsBusy(false);
     }
+  }
+
+  const filteredRows = result
+    ? result.rows.filter((row) =>
+        filterText
+          ? row.some((cell) => formatCell(cell).toLowerCase().includes(filterText.trim().toLowerCase()))
+          : true,
+      )
+    : [];
+
+  const sortedRows =
+    result && sortState
+      ? [...filteredRows].sort((left, right) => {
+          const leftValue = formatCell(left[sortState.columnIndex] ?? "");
+          const rightValue = formatCell(right[sortState.columnIndex] ?? "");
+          const comparison = leftValue.localeCompare(rightValue, undefined, { numeric: true, sensitivity: "base" });
+          return sortState.direction === "asc" ? comparison : -comparison;
+        })
+      : filteredRows;
+
+  const pageCount = Math.max(1, Math.ceil(sortedRows.length / RESULT_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pagedRows = sortedRows.slice(
+    currentPage * RESULT_PAGE_SIZE,
+    currentPage * RESULT_PAGE_SIZE + RESULT_PAGE_SIZE,
+  );
+
+  function toggleSort(columnIndex: number) {
+    setPage(0);
+    setSortState((currentSort) => {
+      if (!currentSort || currentSort.columnIndex !== columnIndex) {
+        return { columnIndex, direction: "asc" };
+      }
+
+      return {
+        columnIndex,
+        direction: currentSort.direction === "asc" ? "desc" : "asc",
+      };
+    });
   }
 
   return (
@@ -269,40 +349,65 @@ function App() {
           <section className="panel-section">
             <div className="section-heading">
               <p className="panel-label">Schema</p>
-              <span className="table-count">{tables.length} tables</span>
+              <div className="schema-toolbar">
+                <span className="table-count">{tables.length} tables</span>
+                <button type="button" className="ghost-inline" onClick={() => setSchemaCollapsed((value) => !value)}>
+                  {schemaCollapsed ? "Expand" : "Collapse"}
+                </button>
+              </div>
             </div>
-            <ul className="table-list">
-              {tables.length ? (
-                tables.map((table) => (
-                  <li key={table.name}>
-                    <div className="table-card-header">
-                      <div>
-                        <strong>{table.name}</strong>
-                        <span>{table.kind.toUpperCase()}</span>
+            {!schemaCollapsed ? (
+              <ul className="table-list">
+                {tables.length ? (
+                  tables.map((table) => (
+                    <li key={table.name}>
+                      <div className="table-card-header">
+                        <div>
+                          <strong>{table.name}</strong>
+                          <span>{table.kind.toUpperCase()}</span>
+                        </div>
+                        <small>
+                          {table.columns.length} cols - {table.rowCount} rows
+                        </small>
                       </div>
-                      <small>
-                        {table.columns.length} cols - {table.rowCount} rows
-                      </small>
-                    </div>
-                    <p className="table-meta">{table.fileName}</p>
-                    <div className="column-list">
-                      {table.columns.map((column) => (
-                        <span key={`${table.name}-${column.name}`}>
-                          {column.name}: {column.type}
-                        </span>
-                      ))}
-                    </div>
-                    {table.sample ? (
-                      <pre className="sample-preview">
-                        {JSON.stringify(table.sample, null, 2)}
-                      </pre>
-                    ) : null}
-                  </li>
-                ))
-              ) : (
-                <li className="empty-state">No tables loaded yet.</li>
-              )}
-            </ul>
+                      <div className="table-actions">
+                        <button type="button" className="ghost-inline" onClick={() => void handleRenameTable(table.name)}>
+                          Rename
+                        </button>
+                        <button type="button" className="ghost-inline danger-inline" onClick={() => void handleDropTable(table.name)}>
+                          Drop
+                        </button>
+                      </div>
+                      <p className="table-meta">{table.fileName}</p>
+                      <div className="column-list">
+                        {table.columns.map((column) => (
+                          <span key={`${table.name}-${column.name}`}>
+                            {column.name}: {column.type}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="sample-values">
+                        {table.columns.map((column) => (
+                          <div key={`${table.name}-sample-${column.name}`} className="sample-value-card">
+                            <strong>{column.name}</strong>
+                            <span>{formatCell(table.sampleValues[column.name])}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {table.sample ? (
+                        <pre className="sample-preview">
+                          {JSON.stringify(table.sample, null, 2)}
+                        </pre>
+                      ) : null}
+                    </li>
+                  ))
+                ) : (
+                  <li className="empty-state">No tables loaded yet.</li>
+                )}
+              </ul>
+            ) : (
+              <div className="empty-state collapsed-note">Schema panel collapsed.</div>
+            )}
           </section>
         </aside>
 
@@ -356,23 +461,61 @@ function App() {
               <>
                 <div className="result-header">
                   <span>
-                    {result.rowCount} row{result.rowCount === 1 ? "" : "s"}
+                    {sortedRows.length} visible row{sortedRows.length === 1 ? "" : "s"}
                   </span>
                   <span>{result.durationMs} ms</span>
+                </div>
+                <div className="result-controls">
+                  <label className="filter-field">
+                    <span>Filter visible rows</span>
+                    <input
+                      value={filterText}
+                      onChange={(event) => {
+                        setFilterText(event.target.value);
+                        setPage(0);
+                      }}
+                      placeholder="Search current result page"
+                      type="search"
+                    />
+                  </label>
+                  <div className="pagination-controls">
+                    <button type="button" className="ghost" disabled={currentPage === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>
+                      Previous
+                    </button>
+                    <span>
+                      Page {currentPage + 1} / {pageCount}
+                    </span>
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={currentPage >= pageCount - 1}
+                      onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
                 <div className="result-table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        {result.schema.map((column) => (
+                        {result.schema.map((column, columnIndex) => (
                           <th key={column.name}>
-                            {column.name} <span className="type-badge">{column.type}</span>
+                            <button type="button" className="column-sort-button" onClick={() => toggleSort(columnIndex)}>
+                              {column.name}
+                              {sortState?.columnIndex === columnIndex
+                                ? sortState.direction === "asc"
+                                  ? " ↑"
+                                  : " ↓"
+                                : ""}
+                            </button>
+                            <span className="type-badge">{column.type}</span>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {result.rows.map((row, rowIndex) => (
+                      {pagedRows.map((row, rowIndex) => (
                         <tr key={`row-${rowIndex}`}>
                           {row.map((cell, cellIndex) => (
                             <td key={`cell-${rowIndex}-${cellIndex}`}>{formatCell(cell)}</td>

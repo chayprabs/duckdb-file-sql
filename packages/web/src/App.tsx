@@ -74,6 +74,7 @@ function App() {
   const [remoteSources, setRemoteSources] = useState<RemoteTableSource[]>([]);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [remoteKind, setRemoteKind] = useState<SupportedFileKind>("parquet");
+  const [editorEnabled, setEditorEnabled] = useState(false);
   const [result, setResult] = useState<AppQueryResult | null>(null);
   const [plan, setPlan] = useState<BrowserExplainResult | null>(null);
   const [engineVersion, setEngineVersion] = useState<string | null>(null);
@@ -96,6 +97,7 @@ function App() {
     const sharedState = parseShareState(window.location.search);
     if (sharedState.sql) {
       setQuery(sharedState.sql);
+      setEditorEnabled(true);
       setStatus(
         sharedState.dialect === FILESQL_DIALECT
           ? "Loaded SQL from a shared FileSQL link."
@@ -139,6 +141,8 @@ function App() {
   }
 
   async function handleSampleLoad(sample: SampleManifestItem) {
+    setEditorEnabled(true);
+
     if (sample.kind === "sqlite") {
       await runBusyTask(async () => {
         const tableName = sample.defaultTable ?? deriveTableName(sample.label);
@@ -183,6 +187,8 @@ function App() {
     if (!files?.length) {
       return;
     }
+
+    setEditorEnabled(true);
 
     const selectedFiles = Array.from(files);
     const descriptors = selectedFiles
@@ -380,6 +386,7 @@ function App() {
     const baseTableName = deriveTableName(fileName);
     const nextTableName = uniqueRemoteTableName(baseTableName, remoteSources);
     const nextSource = { kind: remoteKind, name: nextTableName, source: trimmedUrl };
+    setEditorEnabled(true);
     setRemoteSources((current) => [...current, nextSource]);
     setEngineMode("worker");
     setShowEscalationPrompt(false);
@@ -542,15 +549,22 @@ function App() {
                 />
               </label>
               <div className="remote-url-actions">
-                <select value={remoteKind} onChange={(event) => setRemoteKind(event.target.value as SupportedFileKind)}>
-                  <option value="csv">CSV</option>
-                  <option value="tsv">TSV</option>
-                  <option value="json">JSON</option>
-                  <option value="jsonl">JSONL</option>
-                  <option value="parquet">Parquet</option>
-                  <option value="arrow">Arrow</option>
-                  <option value="sqlite">SQLite</option>
-                </select>
+                <label className="filter-field remote-kind-field" htmlFor="remote-kind">
+                  <span>Remote file type</span>
+                  <select
+                    id="remote-kind"
+                    value={remoteKind}
+                    onChange={(event) => setRemoteKind(event.target.value as SupportedFileKind)}
+                  >
+                    <option value="csv">CSV</option>
+                    <option value="tsv">TSV</option>
+                    <option value="json">JSON</option>
+                    <option value="jsonl">JSONL</option>
+                    <option value="parquet">Parquet</option>
+                    <option value="arrow">Arrow</option>
+                    <option value="sqlite">SQLite</option>
+                  </select>
+                </label>
                 <button type="button" className="ghost" onClick={handleAddRemoteUrl}>
                   Add remote URL
                 </button>
@@ -684,7 +698,20 @@ function App() {
             </div>
           </div>
 
-          <SqlEditor onRun={() => void handleRunQuery()} onValueChange={setQuery} tables={tables} value={query} />
+          {editorEnabled || hasQueryableInput ? (
+            <SqlEditor onRun={() => void handleRunQuery()} onValueChange={setQuery} tables={tables} value={query} />
+          ) : (
+            <div className="editor-placeholder">
+              <div className="editor-placeholder-copy">
+                <p className="panel-label">Editor standby</p>
+                <h3>Load a file to wake the SQL editor.</h3>
+                <p>
+                  Monaco stays deferred until we have a file, sample, remote URL, or shared SQL to
+                  work with. That keeps the first page load lighter.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="hint-strip">
             <span>Cmd+Enter or Ctrl+Enter to run</span>

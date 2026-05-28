@@ -353,6 +353,30 @@ th {
   color: #d3d0c7;
 }
 
+.editor-placeholder {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(246, 150, 64, 0.12), transparent 50%),
+    rgba(245, 243, 237, 0.04);
+  border: 1px dashed rgba(245, 243, 237, 0.16);
+}
+
+.editor-placeholder-copy {
+  max-width: 420px;
+  text-align: center;
+  display: grid;
+  gap: 10px;
+}
+
+.editor-placeholder-copy h3,
+.editor-placeholder-copy p {
+  margin: 0;
+}
+
 .hint-strip {
   justify-content: space-between;
   flex-wrap: wrap;
@@ -372,6 +396,10 @@ th {
   flex: 1;
 }
 
+.remote-kind-field {
+  flex: 0 0 180px;
+}
+
 .filter-field input {
   width: 100%;
   border-radius: 12px;
@@ -379,6 +407,10 @@ th {
   background: rgba(240, 236, 227, 0.06);
   color: inherit;
   padding: 10px 12px;
+}
+
+.filter-field select {
+  width: 100%;
 }
 
 .tab.active {

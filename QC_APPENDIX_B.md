@@ -13,10 +13,11 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - `pnpm build` - passing for workspace packages.
 - `python -m pytest` in `apps/worker` - passing, including remote `httpfs` coverage.
 - `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
+- Lighthouse report written to `artifacts/lighthouse.json`.
 - Current gz bundle readings from the latest `pnpm build`:
-  - `index-fHJpapCH.js`: `66.98 kB`
+  - `index-DLEtYb7m.js`: `67.25 kB`
   - `serialization-BaUKPmn5.js`: `43.44 kB`
-  - `browser-session-DydVubPC.js`: `3.96 kB`
+  - `browser-session-VIhfQVgw.js`: `4.06 kB`
   - `duckdb-browser-C2_XuAsU.js`: `8.17 kB`
   - DuckDB-WASM `.wasm` files remain lazy split artifacts.
 
@@ -44,10 +45,15 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
     - `midwest | 1 | 1`
     - `west | 1 | 3`
   - A3 oversized file prompt: escalation banner and cancel button both visible.
+- Lighthouse evidence from `artifacts/lighthouse.json` on the production build:
+  - Performance `96`
+  - Accessibility `100`
+  - Best Practices `100`
+  - SEO `100`
+  - FCP `2.1 s`, LCP `2.3 s`, TTI `2.3 s`, TBT `70 ms`
 
 ### Qualification items still requiring fresh evidence
 
-- Lighthouse >= 95.
 - Browser 100 MB Parquet p95 <= 1 s.
 - Worker 5 GB Parquet p95 <= 20 s.
 - Privacy evidence for browser query network silence beyond DuckDB-WASM bootstrap.
@@ -84,13 +90,14 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 ### 7.13 onward
 
-- [ ] Lighthouse and latency gates
+- [ ] Latency gates
 - [ ] Privacy and security evidence
 - [ ] Coverage and additional test evidence
 - [ ] Deployment evidence
 - [x] Docs and qualification ledger added in repo
 - [x] SEO route 200 checks
 - [x] Acceptance fixture evidence
+- [x] Lighthouse >= 95
 
 ## Notes
 

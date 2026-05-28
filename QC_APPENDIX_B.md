@@ -39,6 +39,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `https://chayprabs.github.io/duckdb-file-sql/` returns `200`.
   - HTTPS is enforced on the hosted web URL.
   - Hosted SEO routes confirmed `200`: `/sql-on-csv/`, `/sql-on-jsonl/`, `/sqlite-online-query/`.
+- Hosted worker/API evidence:
+  - Public worker tunnel health URL `https://47f35d758bd3a0.lhr.life/health` returns `200` with DuckDB extensions and retention metadata.
+  - Public worker query `POST /v1/query` returns `SELECT 1 AS total_rows -> 1`.
+  - Hosted Pages app successfully executed a remote CSV query against the public worker URL and returned `4` with the UI showing worker mode.
 - Docker/local-run evidence:
   - `docker compose config` resolves the worker service with `apps/worker/Dockerfile`, port `8000`, and `FILESQL_RETENTION_MINUTES=10`.
   - `docker compose up -d worker` served `http://127.0.0.1:8000/health` with `{"status":"ok","extensions":["httpfs","sqlite_scanner","json"]}` before Docker Desktop returned a host-side API `500` during cleanup.
@@ -71,7 +75,6 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 ### Qualification items still requiring fresh evidence
 
-- Hosted worker API evidence.
 - npm publish evidence for `@chayprabs/duckdb-file-sql`.
 - ghcr image push evidence.
 - Final PR qualification evidence.
@@ -120,7 +123,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [ ] Coverage and additional test evidence
 - [ ] Deployment evidence
 - [x] Hosted web URL + HTTPS evidence
-- [ ] Hosted worker API evidence
+- [x] Hosted worker API evidence
 - [x] Docs and qualification ledger added in repo
 - [x] SEO route 200 checks
 - [x] Repo topics >= 10

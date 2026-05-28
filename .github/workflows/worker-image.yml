@@ -3,7 +3,7 @@ name: Worker Image
 on:
   push:
     branches:
-      - cursor/file-sql-build
+      - main
     paths:
       - apps/worker/**
       - .github/workflows/worker-image.yml
@@ -29,7 +29,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}-worker
           tags: |
             type=sha,format=short
-            type=raw,value=cursor-file-sql-build
+            type=raw,value=main
       - uses: docker/build-push-action@v6
         with:
           context: apps/worker

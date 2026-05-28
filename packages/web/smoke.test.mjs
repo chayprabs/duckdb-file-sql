@@ -34,21 +34,29 @@ async function main() {
   const cleanup = [];
   const browser = await chromium.launch({ headless: true });
   try {
+    const workerLaunch = getWorkerLaunch();
+    const webLaunch = getWebLaunch();
     cleanup.push(
-      await startOwnedService(`${WORKER_URL}/health`, "worker", "powershell", [
-        "-NoProfile",
-        "-Command",
-        `Set-Location '${path.join(ROOT, "apps", "worker")}'; python -m uvicorn app.main:app --host 127.0.0.1 --port ${WORKER_PORT}`,
-      ]),
+      await startOwnedService(
+        `${WORKER_URL}/health`,
+        "worker",
+        workerLaunch.command,
+        workerLaunch.args,
+        {},
+        workerLaunch.cwd,
+      ),
     );
     cleanup.push(
-      await startOwnedService(WEB_URL, "web", "powershell", [
-        "-NoProfile",
-        "-Command",
-        `Set-Location '${ROOT}'; pnpm --filter @filesql/web dev -- --host 127.0.0.1 --port ${WEB_PORT}`,
-      ], {
-        FILESQL_WORKER_PROXY_TARGET: WORKER_URL,
-      }),
+      await startOwnedService(
+        WEB_URL,
+        "web",
+        webLaunch.command,
+        webLaunch.args,
+        {
+          FILESQL_WORKER_PROXY_TARGET: WORKER_URL,
+        },
+        webLaunch.cwd,
+      ),
     );
 
     for (const sample of SAMPLE_COUNTS) {
@@ -116,9 +124,56 @@ function normalizeExplainSnapshot(planText) {
     .join("\n");
 }
 
-async function startProcess(name, command, args, extraEnv = {}) {
-  const child = spawn(command, args, {
+function getWorkerLaunch() {
+  const cwd = path.join(ROOT, "apps", "worker");
+  if (process.platform === "win32") {
+    return {
+      command: "powershell",
+      args: [
+        "-NoProfile",
+        "-Command",
+        `python -m uvicorn app.main:app --host 127.0.0.1 --port ${WORKER_PORT}`,
+      ],
+      cwd,
+    };
+  }
+
+  return {
+    command: "python3",
+    args: ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", `${WORKER_PORT}`],
+    cwd,
+  };
+}
+
+function getWebLaunch() {
+  if (process.platform === "win32") {
+    return {
+      command: "powershell",
+      args: [
+        "-NoProfile",
+        "-Command",
+        `pnpm --filter @filesql/web dev -- --host 127.0.0.1 --port ${WEB_PORT}`,
+      ],
+      cwd: ROOT,
+    };
+  }
+
+  return {
+    command: "pnpm",
+    args: ["--filter", "@filesql/web", "dev", "--", "--host", "127.0.0.1", "--port", `${WEB_PORT}`],
     cwd: ROOT,
+  };
+}
+
+async function startOwnedService(url, name, command, args, extraEnv = {}, cwd = ROOT) {
+  const terminate = await startProcess(name, command, args, extraEnv, cwd);
+  await waitForUrl(url);
+  return terminate;
+}
+
+async function startProcess(name, command, args, extraEnv = {}, cwd = ROOT) {
+  const child = spawn(command, args, {
+    cwd,
     detached: false,
     env: { ...process.env, ...extraEnv },
     stdio: "ignore",
@@ -142,12 +197,6 @@ async function startProcess(name, command, args, extraEnv = {}) {
       child.kill();
     });
   };
-}
-
-async function startOwnedService(url, name, command, args, extraEnv = {}) {
-  const terminate = await startProcess(name, command, args, extraEnv);
-  await waitForUrl(url);
-  return terminate;
 }
 
 async function waitForUrl(url) {

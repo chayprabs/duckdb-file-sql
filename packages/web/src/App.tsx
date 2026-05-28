@@ -33,6 +33,7 @@ const budgetInGb = `${Math.round(BROWSER_FILE_BUDGET_BYTES / 1024 / 1024 / 1024)
 const defaultQuery = `SELECT COUNT(*) AS total_rows\nFROM nyc_taxi_sample;`;
 const RESULT_PAGE_SIZE = 25;
 const workerBaseUrl = import.meta.env.VITE_FILESQL_WORKER_URL ?? "/api";
+const baseUrl = import.meta.env.BASE_URL ?? "/";
 
 type RemoteTableSource = {
   kind: SupportedFileKind;
@@ -105,7 +106,7 @@ function App() {
       );
     }
 
-    void fetch("/samples/manifest.json")
+    void fetch(resolveAppPath("samples/manifest.json"))
       .then((response) => response.json() as Promise<SampleManifestItem[]>)
       .then((payload) => {
         if (!ignore) {
@@ -146,7 +147,7 @@ function App() {
     if (sample.kind === "sqlite") {
       await runBusyTask(async () => {
         const tableName = sample.defaultTable ?? deriveTableName(sample.label);
-        const sourceUrl = new URL(sample.path, window.location.origin).toString();
+        const sourceUrl = resolveAppUrl(sample.path);
         const nextSource = [{ kind: "sqlite", name: tableName, source: sourceUrl }] satisfies RemoteTableSource[];
         setRemoteSources(nextSource);
         setEngineMode("worker");
@@ -164,7 +165,7 @@ function App() {
     }
 
     await runBusyTask(async () => {
-      const response = await fetch(sample.path);
+      const response = await fetch(resolveAppUrl(sample.path));
       if (!response.ok) {
         throw new Error(`Unable to fetch ${sample.label}.`);
       }
@@ -888,6 +889,14 @@ function tablesFromFileName(fileName: string): string {
 
 function defaultQueryForTable(tableName: string): string {
   return `SELECT COUNT(*) AS total_rows\nFROM ${tableName};`;
+}
+
+function resolveAppPath(relativePath: string): string {
+  return `${baseUrl.replace(/\/+$/, "/")}${relativePath.replace(/^\/+/, "")}`;
+}
+
+function resolveAppUrl(relativePath: string): string {
+  return new URL(resolveAppPath(relativePath), window.location.origin).toString();
 }
 
 async function runWorkerQuery(sql: string, tables: RemoteTableSource[]): Promise<AppQueryResult> {

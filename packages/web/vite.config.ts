@@ -5,6 +5,7 @@ const workerProxyTarget = process.env.FILESQL_WORKER_PROXY_TARGET ?? 'http://127
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: process.env.FILESQL_BASE_PATH ?? '/',
   plugins: [react()],
   server: {
     proxy: {

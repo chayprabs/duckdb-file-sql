@@ -16,6 +16,14 @@ import {
   type BrowserSourceFile,
   type BrowserTableInfo,
 } from "./contracts";
+import {
+  isPaginatableStatement,
+  splitSqlStatements,
+  validateReadOnlySql,
+} from "./safety";
+
+const BROWSER_RESULT_ROW_CAP = 1_000;
+const BROWSER_RESULT_BYTE_CAP = 512_000;
 
 const MANUAL_BUNDLES: DuckDBBundles = {
   mvp: {
@@ -89,12 +97,37 @@ class DuckDbBrowserSession implements BrowserSession {
   }
 
   async query(sql: string): Promise<BrowserQueryResult> {
+    validateReadOnlySql(sql);
+    const statements = splitSqlStatements(sql);
+    const finalStatement = statements.pop();
+    if (!finalStatement) {
+      throw new Error("Query must contain at least one statement.");
+    }
+
+    for (const statement of statements) {
+      await this.connection.query(statement);
+    }
+
+    const executableSql = isPaginatableStatement(finalStatement)
+      ? `SELECT * FROM (${finalStatement}) AS __filesql_query LIMIT ${BROWSER_RESULT_ROW_CAP + 1}`
+      : finalStatement;
+
     const startedAt = performance.now();
     const [arrowTable, tableNames] = await Promise.all([
-      this.connection.query(sql),
-      this.connection.getTableNames(sql).catch(() => []),
+      this.connection.query(executableSql),
+      this.connection.getTableNames(finalStatement).catch(() => []),
     ]);
     const rows = arrowTableToRows(arrowTable);
+    const cappedRows = rows.slice(0, BROWSER_RESULT_ROW_CAP);
+    const byteTrimmedRows = trimRowsToByteCap(cappedRows);
+    const truncated =
+      rows.length > BROWSER_RESULT_ROW_CAP || byteTrimmedRows.length < cappedRows.length;
+    const truncationReason =
+      rows.length > BROWSER_RESULT_ROW_CAP
+        ? `Results truncated to the first ${BROWSER_RESULT_ROW_CAP} rows in browser mode.`
+        : byteTrimmedRows.length < cappedRows.length
+          ? `Results truncated to stay within the ${Math.round(BROWSER_RESULT_BYTE_CAP / 1024)} KB browser budget.`
+          : null;
     const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
 
     return {
@@ -102,16 +135,29 @@ class DuckDbBrowserSession implements BrowserSession {
         name: field.name,
         type: field.type.toString(),
       })),
-      rows,
+      rows: byteTrimmedRows,
       durationMs,
-      rowCount: rows.length,
+      rowCount: byteTrimmedRows.length,
       ranOn: "browser",
       tableNames,
+      truncated,
+      truncationReason,
     };
   }
 
   async explain(sql: string, analyze = false): Promise<BrowserExplainResult> {
-    const explainSql = `${analyze ? "EXPLAIN ANALYZE" : "EXPLAIN"} ${sql}`;
+    validateReadOnlySql(sql);
+    const statements = splitSqlStatements(sql);
+    const finalStatement = statements.pop();
+    if (!finalStatement) {
+      throw new Error("Query must contain at least one statement.");
+    }
+
+    for (const statement of statements) {
+      await this.connection.query(statement);
+    }
+
+    const explainSql = `${analyze ? "EXPLAIN ANALYZE" : "EXPLAIN"} ${finalStatement}`;
     const startedAt = performance.now();
     const explainTable = await this.connection.query(explainSql);
     const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
@@ -356,4 +402,21 @@ function formatExplainRow(value: unknown): string {
   }
 
   return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function trimRowsToByteCap(rows: unknown[][]): unknown[][] {
+  const keptRows: unknown[][] = [];
+  let currentBytes = 0;
+
+  for (const row of rows) {
+    const rowBytes = new TextEncoder().encode(JSON.stringify(row)).length;
+    if (keptRows.length > 0 && currentBytes + rowBytes > BROWSER_RESULT_BYTE_CAP) {
+      break;
+    }
+
+    keptRows.push(row);
+    currentBytes += rowBytes;
+  }
+
+  return keptRows;
 }

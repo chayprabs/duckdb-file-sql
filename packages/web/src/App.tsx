@@ -187,6 +187,10 @@ function App() {
         `Executed query against ${queryResult.tableNames.join(", ") || "current session"} in ${queryResult.durationMs} ms.`,
         ...current,
       ].slice(0, 10));
+      const truncationReason = queryResult.truncationReason;
+      if (queryResult.truncated && truncationReason) {
+        setRunLog((current) => [truncationReason, ...current].slice(0, 10));
+      }
       setTables(await session.listTables());
     });
   }
@@ -243,7 +247,9 @@ function App() {
     try {
       await task();
     } catch (taskError) {
-      setError(taskError instanceof Error ? taskError.message : "Unexpected error.");
+      const nextError = taskError instanceof Error ? taskError.message : "Unexpected error.";
+      setError(nextError);
+      setRunLog((current) => [`Error: ${nextError}`, ...current].slice(0, 10));
     } finally {
       setIsBusy(false);
     }
@@ -502,6 +508,9 @@ function App() {
                   </span>
                   <span>{result.durationMs} ms</span>
                 </div>
+                {result.truncated && result.truncationReason ? (
+                  <p className="truncation-banner">{result.truncationReason}</p>
+                ) : null}
                 <div className="result-controls">
                   <label className="filter-field">
                     <span>Filter visible rows</span>
@@ -542,8 +551,8 @@ function App() {
                               {column.name}
                               {sortState?.columnIndex === columnIndex
                                 ? sortState.direction === "asc"
-                                  ? " ↑"
-                                  : " ↓"
+                                  ? " ^"
+                                  : " v"
                                 : ""}
                             </button>
                             <span className="type-badge">{column.type}</span>

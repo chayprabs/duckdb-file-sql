@@ -49,6 +49,8 @@ export interface BrowserQueryResult {
   rowCount: number;
   ranOn: "browser";
   tableNames: string[];
+  truncated: boolean;
+  truncationReason: string | null;
 }
 
 export interface BrowserExplainResult {

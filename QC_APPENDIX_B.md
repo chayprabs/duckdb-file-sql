@@ -45,6 +45,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `https://chayprabs.github.io/duckdb-file-sql/` returns `200`.
   - HTTPS is enforced on the hosted web URL.
   - Hosted SEO routes confirmed `200`: `/sql-on-csv/`, `/sql-on-jsonl/`, `/sqlite-online-query/`.
+  - Hosted `/.well-known/security.txt` returns `200` with `Contact`, `Expires`, `Canonical`, `Policy`, and `Preferred-Languages`.
   - `Release` workflow run `26607031972` rebuilt and redeployed Pages from `main`.
 - UI polish on `main` now tightens first-run guidance:
   - Hero explicitly states local-first execution, read-only SQL, and supported formats.
@@ -94,6 +95,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `publish-core` logged `NPM_TOKEN is not configured; skipping npm publish.` and still completed successfully, so the remaining npm gap is credential + live publish evidence rather than workflow configuration.
 - PRD-aligned worker deployment config:
   - `apps/worker/fly.toml` is now checked in for the Fly.io worker target, with `internal_port = 8000`, `/health` checks, HTTPS, zero-idle-machine autostart/autostop, `FILESQL_RETENTION_MINUTES = 10`, and an `8gb` shared VM profile.
+  - `flyctl.exe v0.4.57` is now present on this Windows machine, but `flyctl auth whoami` still reports no access token, so the remaining Fly deployment gap is auth/provider state rather than missing tooling.
 - Security baseline artifacts:
   - `packages/web/public/.well-known/security.txt` is now checked in for the hosted site.
   - `.github/dependabot.yml` now covers npm, pip, Docker, and GitHub Actions.
@@ -191,6 +193,11 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `deploy-pages` job succeeded
   - `worker-image` job succeeded
 - `Release` workflow run `26607446202` also succeeded end-to-end after the npm publish job was added:
+  - `publish-core` job succeeded and skipped publish cleanly when `NPM_TOKEN` was absent
+  - `pages` job succeeded
+  - `deploy-pages` job succeeded
+  - `worker-image` job succeeded
+- `Release` workflow run `26607942192` also succeeded end-to-end on the latest `main` state:
   - `publish-core` job succeeded and skipped publish cleanly when `NPM_TOKEN` was absent
   - `pages` job succeeded
   - `deploy-pages` job succeeded

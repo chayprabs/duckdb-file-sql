@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef } from "react";
 import type { OnChange, OnMount } from "@monaco-editor/react";
 import type { editor as MonacoEditor, IDisposable, Position } from "monaco-editor";
 
-import type { BrowserTableInfo } from "@filesql/core";
+import type { BrowserTableInfo } from "@chayprabs/duckdb-file-sql";
 
 const MonacoEditorView = lazy(async () => {
   const module = await import("@monaco-editor/react");

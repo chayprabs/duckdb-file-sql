@@ -30,7 +30,7 @@ importers:
 
   packages/web:
     dependencies:
-      '@filesql/core':
+      '@chayprabs/duckdb-file-sql':
         specifier: workspace:*
         version: link:../core
       '@monaco-editor/react':

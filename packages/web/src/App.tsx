@@ -16,7 +16,7 @@ import {
   type FileDescriptor,
   parseShareState,
   type SupportedFileKind,
-} from "@filesql/core";
+} from "@chayprabs/duckdb-file-sql";
 import "./App.css";
 import { SqlEditor } from "./components/SqlEditor";
 

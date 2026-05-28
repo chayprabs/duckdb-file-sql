@@ -67,9 +67,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 ### Qualification items still requiring fresh evidence
 
-- Worker 5 GB Parquet p95 <= 20 s.
-- Hosted URL, npm publish, ghcr image, and PR qualification evidence.
-- Hosted HTTPS validation evidence.
+- Hosted deployment evidence for a non-404 web URL and worker API.
+- npm publish evidence for `@chayprabs/duckdb-file-sql`.
+- ghcr image push evidence.
+- Final PR qualification evidence.
 
 ## Section 7 Tracking
 
@@ -137,6 +138,12 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [x] DuckDB-WASM smoke tests on each sample
 - [x] Worker integration tests with real Parquet
 - [x] EXPLAIN plan snapshot tests for known queries
+
+### Release-state notes
+
+- GitHub Pages is enabled in workflow mode with HTTPS enforced at `https://chayprabs.github.io/duckdb-file-sql/`, but it currently returns `404` because no Pages deployment has run from the default branch yet.
+- The release workflow now includes GitHub Pages and GHCR publishing jobs, but GitHub Actions cannot dispatch it yet because `release.yml` exists only on `cursor/file-sql-build` and is not available on the default branch.
+- The npm package metadata is now aligned to the required name `@chayprabs/duckdb-file-sql`, but the registry currently returns `404` and this machine is not authenticated to npm for publish.
 
 ## Notes
 

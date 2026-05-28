@@ -37,9 +37,11 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `/duckdb-online/`
 - Section 7 local harness evidence from `artifacts/section7-report.json`:
   - Browser lazy-load: no DuckDB-WASM requests before first sample load; DuckDB-WASM assets requested after first sample load.
+  - Browser-mode query network silence: no network requests fired while running the NYC taxi browser query after the sample was loaded.
+  - Worker retention policy: health endpoint reports `retentionTtlSeconds = 600`.
   - Format counts: CSV `4`, JSONL `3`, JSON `3`, TSV `3`, Parquet `4`, Arrow `3`, SQLite `3`.
   - Remote worker URL count: `4` with worker badge present.
-  - A1 NYC taxi `SELECT COUNT(*)`: `4` in `205 ms`.
+  - A1 NYC taxi `SELECT COUNT(*)`: `4` in `95 ms`.
   - A2 three-file join rows:
     - `east | 2 | 3`
     - `midwest | 1 | 1`
@@ -56,8 +58,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 - Browser 100 MB Parquet p95 <= 1 s.
 - Worker 5 GB Parquet p95 <= 20 s.
-- Privacy evidence for browser query network silence beyond DuckDB-WASM bootstrap.
 - Hosted URL, npm publish, ghcr image, and PR qualification evidence.
+- Hosted HTTPS validation evidence.
 
 ## Section 7 Tracking
 
@@ -91,13 +93,21 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 ### 7.13 onward
 
 - [ ] Latency gates
-- [ ] Privacy and security evidence
+- [ ] Remaining privacy and security evidence
 - [ ] Coverage and additional test evidence
 - [ ] Deployment evidence
 - [x] Docs and qualification ledger added in repo
 - [x] SEO route 200 checks
 - [x] Acceptance fixture evidence
 - [x] Lighthouse >= 95
+- [x] Browser network-silence evidence
+- [x] Worker retention TTL evidence
+
+### Additional test evidence
+
+- `python -m pytest` now covers:
+  - worker retention TTL cleanup of expired job artifacts
+  - worker query logging without SQL body leakage
 
 ## Notes
 

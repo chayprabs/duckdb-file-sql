@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.duckdb_engine import DuckDbEngine
 from app.models import QueryRequest, QueryResponse
 from app.safety import ReadOnlyViolation, validate_read_only_sql
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
 
 @asynccontextmanager

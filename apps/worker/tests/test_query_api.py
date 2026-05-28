@@ -1,15 +1,19 @@
 import functools
 import http.server
 import json
+import logging
 import sqlite3
 import threading
+from datetime import datetime, timedelta, timezone
 
 import duckdb
 import pyarrow as pa
 import pyarrow.ipc as pa_ipc
 from fastapi.testclient import TestClient
 
+from app.duckdb_engine import DuckDbEngine
 from app.main import app
+from app.models import QueryRequest
 
 
 def test_healthcheck_reports_extensions() -> None:
@@ -18,6 +22,7 @@ def test_healthcheck_reports_extensions() -> None:
 
     assert response.status_code == 200
     assert response.json()["extensions"] == ["httpfs", "sqlite_scanner", "json"]
+    assert response.json()["retentionTtlSeconds"] == 600
 
 
 def test_query_supports_core_formats(tmp_path) -> None:
@@ -126,3 +131,37 @@ def test_query_supports_remote_httpfs_sources(tmp_path) -> None:
 
     assert response.status_code == 200
     assert response.json()["rows"] == [[2]]
+
+
+def test_worker_retention_ttl_cleans_expired_artifacts(tmp_path) -> None:
+    storage_root = tmp_path / "artifacts"
+    engine = DuckDbEngine(storage_root=storage_root, retention_ttl_seconds=1)
+
+    response = engine.run_query(QueryRequest(sql="SELECT 1 AS total_rows"))
+    artifact_dir = storage_root / response.jobId
+
+    assert artifact_dir.exists()
+
+    metadata_path = artifact_dir / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["expiresAt"] = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat()
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    removed = engine.cleanup_expired_artifacts()
+
+    assert removed == 1
+    assert not artifact_dir.exists()
+
+
+def test_worker_logs_query_metadata_without_sql_body(tmp_path, caplog) -> None:
+    logger = logging.getLogger("filesql.worker.test")
+    engine = DuckDbEngine(storage_root=tmp_path / "artifacts", retention_ttl_seconds=600, logger=logger)
+
+    with caplog.at_level(logging.INFO, logger=logger.name):
+        response = engine.run_query(QueryRequest(sql="SELECT 42 AS answer"))
+
+    joined_logs = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert response.jobId in joined_logs
+    assert "Query completed" in joined_logs
+    assert "SELECT 42 AS answer" not in joined_logs

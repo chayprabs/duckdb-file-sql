@@ -40,6 +40,12 @@ const report = {
   workerUrl: WORKER_URL,
   sampleUrl: SAMPLE_URL,
   lazyLoad: { initialDuckdbRequests: [], afterLoadDuckdbRequests: [] },
+  privacy: {
+    browserQueryRequests: [],
+    browserQuerySilent: false,
+    workerRetentionTtlSeconds: null,
+    workerActiveArtifacts: null,
+  },
   counts: [],
   acceptance: {},
 };
@@ -71,6 +77,7 @@ async function main() {
       await verifySampleCounts(browser);
       await verifySqliteSample(browser);
       await verifyRemoteUrl(browser);
+      await verifyPrivacy(browser);
       await verifyA1(browser);
       await verifyA2(browser);
       await verifyA3(browser);
@@ -141,6 +148,27 @@ async function verifySqliteSample(browser) {
   await page.waitForTimeout(1800);
   report.counts.push({ label: "Chinook Lite", expected: "3", actual: await firstBodyCell(page) });
   await page.close();
+}
+
+async function verifyPrivacy(browser) {
+  const page = await browser.newPage();
+  const queryRequests = [];
+  page.on("request", (request) => queryRequests.push(request.url()));
+  await page.goto(WEB_URL, { waitUntil: "load" });
+  await clickSample(page, "NYC Taxi Sample");
+  await waitForRunReady(page, "NYC Taxi Sample");
+  queryRequests.length = 0;
+  await page.getByRole("button", { name: "Run query", exact: true }).click();
+  await page.locator("tbody td").first().waitFor({ state: "visible", timeout: 10_000 });
+  await page.waitForTimeout(500);
+  report.privacy.browserQueryRequests = queryRequests.filter((url) => !url.startsWith("data:"));
+  report.privacy.browserQuerySilent = report.privacy.browserQueryRequests.length === 0;
+  await page.close();
+
+  const healthResponse = await fetch(`${WORKER_URL}/health`);
+  const healthPayload = await healthResponse.json();
+  report.privacy.workerRetentionTtlSeconds = healthPayload.retentionTtlSeconds ?? null;
+  report.privacy.workerActiveArtifacts = healthPayload.activeArtifacts ?? null;
 }
 
 async function verifyA1(browser) {

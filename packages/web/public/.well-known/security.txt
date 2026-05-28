@@ -1,0 +1,5 @@
+Contact: mailto:chaitanyaplusplus@gmail.com
+Expires: 2027-05-29T00:00:00.000Z
+Canonical: https://chayprabs.github.io/duckdb-file-sql/.well-known/security.txt
+Policy: https://github.com/chayprabs/duckdb-file-sql/blob/main/SECURITY.md
+Preferred-Languages: en

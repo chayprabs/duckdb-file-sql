@@ -91,6 +91,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `publish-core` logged `NPM_TOKEN is not configured; skipping npm publish.` and still completed successfully, so the remaining npm gap is credential + live publish evidence rather than workflow configuration.
 - PRD-aligned worker deployment config:
   - `apps/worker/fly.toml` is now checked in for the Fly.io worker target, with `internal_port = 8000`, `/health` checks, HTTPS, zero-idle-machine autostart/autostop, `FILESQL_RETENTION_MINUTES = 10`, and an `8gb` shared VM profile.
+- Security baseline artifacts:
+  - `packages/web/public/.well-known/security.txt` is now checked in for the hosted site.
+  - `.github/dependabot.yml` now covers npm, pip, Docker, and GitHub Actions.
+  - `.github/workflows/codeql.yml` now scans `javascript-typescript` and `python` on `main`, PRs, and a weekly schedule.
 
 ### Qualification items still requiring fresh evidence
 
@@ -151,6 +155,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [x] Browser network-silence evidence
 - [x] Worker retention TTL evidence
 - [x] Worker logs redact SQL bodies and source locations
+- [x] Hosted security.txt artifact checked in
 
 ### Additional test evidence
 

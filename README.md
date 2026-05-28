@@ -69,6 +69,7 @@ cd apps/worker && python -m pytest
 - `/sql-on-jsonl`
 - `/sqlite-online-query`
 - `/duckdb-online`
+- `/.well-known/security.txt`
 
 ## Self-Host
 
@@ -97,6 +98,10 @@ git push origin main
 Then open the repo in Render Blueprint mode and apply the `filesql-worker` service definition from `render.yaml`, or deploy the worker directly from `apps/worker/fly.toml` with Fly.io.
 
 Checked-in UI screenshots live under `docs/screenshots/` so the GitHub README mirrors the current product surface instead of mockups.
+
+## Security
+
+The hosted web build now publishes `/.well-known/security.txt`, and the repository includes `SECURITY.md`, `.github/dependabot.yml`, and `.github/workflows/codeql.yml` so vulnerability reporting, dependency updates, and code scanning are all wired into the default branch.
 
 ## License
 

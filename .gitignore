@@ -10,3 +10,12 @@ CODEX_GOLD_PROMPTS.md
 CODEX_GOAL_PROMPTS.md
 QUALIFYING_CRITERIA.md
 [0-3][0-9]_*.md
+
+node_modules/
+dist/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.egg-info/
+.playwright-cli/

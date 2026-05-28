@@ -1,0 +1,5 @@
+event_id,user_id,city,orders,amount
+1,101,New York,2,45.50
+2,102,Chicago,1,19.95
+3,101,New York,1,11.25
+4,103,Seattle,3,72.10

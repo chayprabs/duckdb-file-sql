@@ -53,10 +53,14 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - Best Practices `100`
   - SEO `100`
   - FCP `2.1 s`, LCP `2.3 s`, TTI `2.3 s`, TBT `70 ms`
+- Latency harness evidence from `artifacts/latency-report.json`:
+  - Browser benchmark fixture size: `106,950,155` bytes (`~102.0 MiB`)
+  - Browser p95 over 5 runs: `425 ms`
+  - Browser latency gate status: passing
+  - Worker benchmark harness is in place but the 5 GB run is still pending fresh evidence
 
 ### Qualification items still requiring fresh evidence
 
-- Browser 100 MB Parquet p95 <= 1 s.
 - Worker 5 GB Parquet p95 <= 20 s.
 - Hosted URL, npm publish, ghcr image, and PR qualification evidence.
 - Hosted HTTPS validation evidence.
@@ -93,6 +97,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 ### 7.13 onward
 
 - [ ] Latency gates
+- [x] Browser 100 MB latency gate
+- [ ] Worker 5 GB latency gate
 - [ ] Remaining privacy and security evidence
 - [ ] Coverage and additional test evidence
 - [ ] Deployment evidence

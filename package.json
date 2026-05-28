@@ -7,6 +7,7 @@
     "build": "pnpm -r build",
     "dev:web": "pnpm --filter @filesql/web dev",
     "lint": "pnpm -r lint",
+    "qualify:latency": "node scripts/latency-qualification.mjs",
     "qualify:section7": "node scripts/section7-qualification.mjs",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"

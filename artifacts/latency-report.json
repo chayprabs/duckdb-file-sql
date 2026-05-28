@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-05-28T21:19:56.254Z",
+  "browser": {
+    "actualBytes": 106950155,
+    "p95Ms": 425,
+    "samplesMs": [
+      425,
+      190,
+      217,
+      206,
+      154
+    ],
+    "passed": true,
+    "totalRows": "246772"
+  },
+  "worker": null,
+  "thresholds": {
+    "browserP95Ms": 1000,
+    "workerP95Ms": 20000
+  },
+  "targets": {
+    "browserBytes": 104857600,
+    "workerBytes": 5368709120,
+    "repeats": 5
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BROWSER_FILE_BUDGET_BYTES,
   chooseExecutionModeForFiles,
@@ -11,6 +11,7 @@ import {
   type SupportedFileKind,
 } from "@filesql/core";
 import "./App.css";
+import { SqlEditor } from "./components/SqlEditor";
 
 type SampleManifestItem = {
   id: string;
@@ -173,13 +174,6 @@ function App() {
     }
   }
 
-  function handleEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-      event.preventDefault();
-      void handleRunQuery();
-    }
-  }
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -328,15 +322,7 @@ function App() {
             </div>
           </div>
 
-          <label className="editor-surface">
-            <span className="sr-only">SQL editor</span>
-            <textarea
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={handleEditorKeyDown}
-              spellCheck={false}
-            />
-          </label>
+          <SqlEditor onRun={() => void handleRunQuery()} onValueChange={setQuery} tables={tables} value={query} />
 
           <div className="hint-strip">
             <span>Cmd+Enter or Ctrl+Enter to run</span>

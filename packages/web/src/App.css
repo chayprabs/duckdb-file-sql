@@ -262,19 +262,19 @@ th {
 .editor-surface {
   min-height: 420px;
   overflow: auto;
+  padding: 0;
 }
 
-.editor-surface textarea {
-  width: 100%;
+.editor-surface .monaco-editor,
+.editor-surface .overflow-guard {
+  border-radius: 20px;
+}
+
+.editor-loading {
   min-height: 420px;
-  resize: vertical;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: inherit;
-  font-family: "Cascadia Code", "Fira Code", monospace;
-  line-height: 1.6;
-  font-size: 0.96rem;
+  display: grid;
+  place-items: center;
+  color: #d3d0c7;
 }
 
 .hint-strip {

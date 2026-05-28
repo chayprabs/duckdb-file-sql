@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@filesql/core": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "^0.55.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

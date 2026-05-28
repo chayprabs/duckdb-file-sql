@@ -23,6 +23,17 @@ export interface RouteDecision {
 
 export const BROWSER_FILE_BUDGET_BYTES = 1024 * 1024 * 1024;
 
+const EXTENSION_TO_KIND: Record<string, SupportedFileKind> = {
+  arrow: "arrow",
+  csv: "csv",
+  json: "json",
+  jsonl: "jsonl",
+  parquet: "parquet",
+  sqlite: "sqlite",
+  sqlite3: "sqlite",
+  tsv: "tsv",
+};
+
 export function chooseExecutionMode(file: FileDescriptor): RouteDecision {
   if (file.bytes > BROWSER_FILE_BUDGET_BYTES) {
     return {
@@ -35,4 +46,35 @@ export function chooseExecutionMode(file: FileDescriptor): RouteDecision {
     mode: "browser",
     reason: "File fits the in-browser budget.",
   };
+}
+
+export function chooseExecutionModeForFiles(files: FileDescriptor[]): RouteDecision {
+  const oversizedFile = files.find((file) => file.bytes > BROWSER_FILE_BUDGET_BYTES);
+  if (oversizedFile) {
+    return {
+      mode: "worker",
+      reason: `${oversizedFile.name} exceeds the in-browser budget and requires the worker.`,
+    };
+  }
+
+  return {
+    mode: "browser",
+    reason: "All files fit the in-browser budget.",
+  };
+}
+
+export function detectFileKind(fileName: string): SupportedFileKind | null {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return EXTENSION_TO_KIND[extension] ?? null;
+}
+
+export function deriveTableName(fileName: string): string {
+  const baseName = fileName.replace(/\.[^.]+$/, "").toLowerCase();
+  const cleaned = baseName.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+
+  if (!cleaned) {
+    return "table";
+  }
+
+  return /^[0-9]/.test(cleaned) ? `t_${cleaned}` : cleaned;
 }

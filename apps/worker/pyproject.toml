@@ -12,6 +12,8 @@ dependencies = [
   "duckdb>=1.4.1",
   "fastapi>=0.116.1",
   "pydantic>=2.11.7",
+  "pyarrow>=18.1.0",
+  "sqlglot>=26.0.0",
   "uvicorn[standard]>=0.35.0"
 ]
 

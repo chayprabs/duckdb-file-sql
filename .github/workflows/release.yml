@@ -94,11 +94,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @chayprabs/duckdb-file-sql build
-      - name: Publish package
-        if: ${{ secrets.NPM_TOKEN != '' }}
-        run: pnpm --filter @chayprabs/duckdb-file-sql publish --no-git-checks --access public
+      - name: Publish package when token is available
+        run: |
+          if [ -n "${NODE_AUTH_TOKEN}" ]; then
+            pnpm --filter @chayprabs/duckdb-file-sql publish --no-git-checks --access public
+          else
+            echo "NPM_TOKEN is not configured; skipping npm publish."
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Skip package publish
-        if: ${{ secrets.NPM_TOKEN == '' }}
-        run: echo "NPM_TOKEN is not configured; skipping npm publish."

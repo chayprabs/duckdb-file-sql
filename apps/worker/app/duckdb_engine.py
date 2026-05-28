@@ -54,6 +54,7 @@ class DuckDbEngine:
         job_dir = self.storage_root / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
         self._write_job_metadata(job_dir, job_id, len(request.tables))
+        source_summary = _summarize_sources(request.tables)
         try:
             registered_tables = self._register_sources(connection, request.tables, job_dir)
             executable_sql = self._prepare_sql(connection, request)
@@ -67,12 +68,14 @@ class DuckDbEngine:
             visible_rows = rows[: request.page_size]
             row_count = len(visible_rows)
             self.logger.info(
-                "Query completed job_id=%s table_count=%s duration_ms=%s truncated=%s rows_returned=%s",
+                "Query completed job_id=%s table_count=%s duration_ms=%s truncated=%s rows_returned=%s source_kinds=%s remote_source_count=%s",
                 job_id,
                 len(registered_tables),
                 elapsed_ms,
                 len(rows) > request.page_size,
                 row_count,
+                source_summary["kinds"],
+                source_summary["remote_count"],
             )
 
             return QueryResponse(
@@ -89,10 +92,12 @@ class DuckDbEngine:
             )
         except Exception:
             self.logger.exception(
-                "Query failed job_id=%s table_count=%s read_only=%s",
+                "Query failed job_id=%s table_count=%s read_only=%s source_kinds=%s remote_source_count=%s",
                 job_id,
                 len(request.tables),
                 request.read_only,
+                source_summary["kinds"],
+                source_summary["remote_count"],
             )
             raise
         finally:
@@ -267,3 +272,12 @@ def _sql_string_literal(value: str) -> str:
 
 def _is_pageable_statement(statement: exp.Expression) -> bool:
     return isinstance(statement, (exp.Select, exp.Union, exp.Intersect, exp.Except, exp.Subquery))
+
+
+def _summarize_sources(sources: list[TableSource]) -> dict[str, object]:
+    kinds = sorted({source.kind for source in sources})
+    remote_count = 0
+    for source in sources:
+        if urlparse(source.source).scheme in {"http", "https"}:
+            remote_count += 1
+    return {"kinds": kinds, "remote_count": remote_count}

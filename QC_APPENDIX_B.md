@@ -150,12 +150,14 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [x] Lighthouse >= 95
 - [x] Browser network-silence evidence
 - [x] Worker retention TTL evidence
+- [x] Worker logs redact SQL bodies and source locations
 
 ### Additional test evidence
 
 - `python -m pytest` now covers:
   - worker retention TTL cleanup of expired job artifacts
   - worker query logging without SQL body leakage
+  - worker success/failure logging with source-kind summaries only, excluding SQL text, filenames, table aliases, and remote URLs
 - `pnpm test` now covers:
   - DuckDB-WASM/browser smoke counts across the full sample pack via `packages/web/smoke.test.mjs`
   - normalized EXPLAIN snapshot coverage for the NYC taxi query plan

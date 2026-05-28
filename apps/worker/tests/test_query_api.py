@@ -165,6 +165,75 @@ def test_worker_logs_query_metadata_without_sql_body(tmp_path, caplog) -> None:
     assert response.jobId in joined_logs
     assert "Query completed" in joined_logs
     assert "SELECT 42 AS answer" not in joined_logs
+    assert "source_kinds=[]" in joined_logs
+    assert "remote_source_count=0" in joined_logs
+
+
+def test_worker_logs_only_source_summary_without_paths_or_urls(tmp_path, caplog) -> None:
+    logger = logging.getLogger("filesql.worker.summary")
+    engine = DuckDbEngine(storage_root=tmp_path / "artifacts", retention_ttl_seconds=600, logger=logger)
+    csv_path = tmp_path / "sensitive-customers.csv"
+    csv_path.write_text("id,name\n1,Ada\n", encoding="utf-8")
+
+    parquet_path = tmp_path / "remote-sensitive.parquet"
+    parquet_con = duckdb.connect()
+    parquet_con.execute("CREATE TABLE remote_people AS SELECT 1 AS id, 'Ada' AS name")
+    parquet_con.execute(f"COPY remote_people TO '{parquet_path.as_posix()}' (FORMAT PARQUET)")
+    parquet_con.close()
+
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=tmp_path.as_posix())
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        remote_url = f"http://127.0.0.1:{server.server_port}/remote-sensitive.parquet?token=secret"
+
+        with caplog.at_level(logging.INFO, logger=logger.name):
+            engine.run_query(
+                QueryRequest(
+                    sql="SELECT COUNT(*) AS total_rows FROM local_csv",
+                    tables=[
+                        {"name": "local_csv", "source": csv_path.as_posix(), "kind": "csv"},
+                        {"name": "remote_parquet", "source": remote_url, "kind": "parquet"},
+                    ],
+                )
+            )
+        server.shutdown()
+        thread.join(timeout=5)
+
+    joined_logs = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert "source_kinds=['csv', 'parquet']" in joined_logs
+    assert "remote_source_count=1" in joined_logs
+    assert "sensitive-customers.csv" not in joined_logs
+    assert remote_url not in joined_logs
+    assert "local_csv" not in joined_logs
+
+
+def test_worker_failure_logs_avoid_sql_and_source_locations(tmp_path, caplog) -> None:
+    logger = logging.getLogger("filesql.worker.failure")
+    engine = DuckDbEngine(storage_root=tmp_path / "artifacts", retention_ttl_seconds=600, logger=logger)
+    csv_path = tmp_path / "very-private.csv"
+    csv_path.write_text("id,name\n1,Ada\n", encoding="utf-8")
+
+    with caplog.at_level(logging.ERROR, logger=logger.name):
+        try:
+            engine.run_query(
+                QueryRequest(
+                    sql="SELECT * FROM missing_table WHERE secret = 'abc123'",
+                    tables=[{"name": "customers", "source": csv_path.as_posix(), "kind": "csv"}],
+                )
+            )
+        except duckdb.Error:
+            pass
+
+    joined_logs = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert "Query failed" in joined_logs
+    assert "source_kinds=['csv']" in joined_logs
+    assert "remote_source_count=0" in joined_logs
+    assert "SELECT * FROM missing_table" not in joined_logs
+    assert "abc123" not in joined_logs
+    assert "very-private.csv" not in joined_logs
 
 
 def test_worker_accepts_retention_minutes_env(monkeypatch, tmp_path) -> None:

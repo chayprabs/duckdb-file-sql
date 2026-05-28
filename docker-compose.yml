@@ -1,8 +1,0 @@
-services:
-  worker:
-    build:
-      context: ./apps/worker
-    ports:
-      - "8000:8000"
-    environment:
-      FILESQL_RETENTION_MINUTES: "10"

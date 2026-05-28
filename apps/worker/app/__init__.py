@@ -1,1 +1,0 @@
-"""FileSQL worker package."""

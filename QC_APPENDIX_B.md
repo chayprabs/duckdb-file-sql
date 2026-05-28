@@ -42,6 +42,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `https://chayprabs.github.io/duckdb-file-sql/` returns `200`.
   - HTTPS is enforced on the hosted web URL.
   - Hosted SEO routes confirmed `200`: `/sql-on-csv/`, `/sql-on-jsonl/`, `/sqlite-online-query/`.
+  - `Release` workflow run `26607031972` rebuilt and redeployed Pages from `main`.
 - UI polish on `main` now tightens first-run guidance:
   - Hero explicitly states local-first execution, read-only SQL, and supported formats.
   - Empty-state guidance now tells the user exactly how to start: load a file or sample, then run the query.
@@ -81,6 +82,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - Worker latency gate status: passing
 - GHCR evidence:
   - `Worker Image` workflow run `26605723557` completed successfully on `main`-aligned workflow configuration.
+  - `Release` workflow run `26607031972` also completed a successful `worker-image` publish job on `main`.
 
 ### Qualification items still requiring fresh evidence
 
@@ -161,6 +163,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 - GitHub Pages is now serving the static web build from `gh-pages` at `https://chayprabs.github.io/duckdb-file-sql/`, and the repository homepage has been updated to that URL.
 - The release workflow now exists on `main` and includes GitHub Pages and GHCR publishing jobs via `workflow_dispatch`.
+- `Release` workflow run `26607031972` succeeded end-to-end on `main`:
+  - `pages` job succeeded
+  - `deploy-pages` job succeeded
+  - `worker-image` job succeeded
 - The npm package metadata is now aligned to the required name `@chayprabs/duckdb-file-sql`, but the registry currently returns `404` and this machine is not authenticated to npm for publish.
 - Local GHCR publication attempts are currently blocked by a Docker Desktop engine API `500` on `docker login ghcr.io`, so GHCR verification remains external-state dependent.
 

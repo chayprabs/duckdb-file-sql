@@ -3,6 +3,7 @@ import {
   BROWSER_FILE_BUDGET_BYTES,
   chooseExecutionModeForFiles,
   createBrowserSession,
+  type BrowserExplainResult,
   detectFileKind,
   type BrowserQueryResult,
   type BrowserSession,
@@ -34,6 +35,7 @@ function App() {
   const [query, setQuery] = useState(defaultQuery);
   const [tables, setTables] = useState<BrowserTableInfo[]>([]);
   const [result, setResult] = useState<BrowserQueryResult | null>(null);
+  const [plan, setPlan] = useState<BrowserExplainResult | null>(null);
   const [engineVersion, setEngineVersion] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [engineMode, setEngineMode] = useState<"browser" | "worker">("browser");
@@ -46,6 +48,8 @@ function App() {
   const [sortState, setSortState] = useState<{ columnIndex: number; direction: "asc" | "desc" } | null>(
     null,
   );
+  const [activeTab, setActiveTab] = useState<"result" | "plan" | "logs">("result");
+  const [runLog, setRunLog] = useState<string[]>([]);
 
   useEffect(() => {
     let ignore = false;
@@ -98,6 +102,10 @@ function App() {
 
       const loadedTables = await registerBrowserFiles([file]);
       setStatus(`Loaded ${sample.label} in the browser.`);
+      setRunLog((current) => [
+        `Loaded sample ${sample.label} in browser mode.`,
+        ...current,
+      ].slice(0, 10));
       setQuery(defaultQueryForTable(loadedTables[0]?.name ?? tablesFromFileName(fileName)));
     });
   }
@@ -141,6 +149,10 @@ function App() {
     await runBusyTask(async () => {
       const loadedTables = await registerBrowserFiles(selectedFiles);
       setStatus(`Loaded ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""} locally.`);
+      setRunLog((current) => [
+        `Loaded ${selectedFiles.length} local file${selectedFiles.length > 1 ? "s" : ""} in browser mode.`,
+        ...current,
+      ].slice(0, 10));
       const firstTable = loadedTables[0]?.name ?? tablesFromFileName(selectedFiles[0].name);
       setQuery(defaultQueryForTable(firstTable));
     });
@@ -152,6 +164,8 @@ function App() {
     setTables(await session.listTables());
     if (loadedTables[0]) {
       setResult(null);
+      setPlan(null);
+      setActiveTab("result");
     }
     return loadedTables;
   }
@@ -161,13 +175,33 @@ function App() {
       const session = await ensureBrowserSession();
       const queryResult = await session.query(query);
       setResult(queryResult);
+      setPlan(null);
+      setActiveTab("result");
       setFilterText("");
       setPage(0);
       setSortState(null);
       setStatus(
         `Executed in browser with ${queryResult.rowCount} row${queryResult.rowCount === 1 ? "" : "s"} returned.`,
       );
+      setRunLog((current) => [
+        `Executed query against ${queryResult.tableNames.join(", ") || "current session"} in ${queryResult.durationMs} ms.`,
+        ...current,
+      ].slice(0, 10));
       setTables(await session.listTables());
+    });
+  }
+
+  async function handleExplain(analyze: boolean) {
+    await runBusyTask(async () => {
+      const session = await ensureBrowserSession();
+      const explainResult = await session.explain(query, analyze);
+      setPlan(explainResult);
+      setActiveTab("plan");
+      setStatus(`${analyze ? "EXPLAIN ANALYZE" : "EXPLAIN"} completed in ${explainResult.durationMs} ms.`);
+      setRunLog((current) => [
+        `Ran ${analyze ? "EXPLAIN ANALYZE" : "EXPLAIN"} in ${explainResult.durationMs} ms.`,
+        ...current,
+      ].slice(0, 10));
     });
   }
 
@@ -418,8 +452,11 @@ function App() {
               <h2>Write SQL against the current browser session.</h2>
             </div>
             <div className="toolbar-actions">
-              <button type="button" className="ghost" disabled>
+              <button type="button" className="ghost" disabled={isBusy || !tables.length} onClick={() => void handleExplain(false)}>
                 Explain
+              </button>
+              <button type="button" className="ghost" disabled={isBusy || !tables.length} onClick={() => void handleExplain(true)}>
+                Explain Analyze
               </button>
               <button type="button" disabled={isBusy || !tables.length} onClick={() => void handleRunQuery()}>
                 {isBusy ? "Running..." : "Run query"}
@@ -444,20 +481,20 @@ function App() {
               <h2>Preview</h2>
             </div>
             <div className="tab-strip">
-              <button type="button" className="tab active">
+              <button type="button" className={`tab ${activeTab === "result" ? "active" : ""}`} onClick={() => setActiveTab("result")}>
                 Result
               </button>
-              <button type="button" className="tab" disabled>
+              <button type="button" className={`tab ${activeTab === "plan" ? "active" : ""}`} disabled={!plan} onClick={() => setActiveTab("plan")}>
                 Plan
               </button>
-              <button type="button" className="tab">
+              <button type="button" className={`tab ${activeTab === "logs" ? "active" : ""}`} onClick={() => setActiveTab("logs")}>
                 Logs
               </button>
             </div>
           </div>
 
           <div className="result-card">
-            {result ? (
+            {activeTab === "result" && result ? (
               <>
                 <div className="result-header">
                   <span>
@@ -529,9 +566,31 @@ function App() {
                   Tables referenced: {result.tableNames.length ? result.tableNames.join(", ") : "unknown"}
                 </div>
               </>
+            ) : activeTab === "plan" && plan ? (
+              <div className="plan-pane">
+                <div className="result-header">
+                  <span>{plan.analyze ? "EXPLAIN ANALYZE" : "EXPLAIN"}</span>
+                  <span>{plan.durationMs} ms</span>
+                </div>
+                <pre className="plan-output">{plan.rows.join("\n\n")}</pre>
+              </div>
+            ) : activeTab === "logs" ? (
+              <div className="log-pane">
+                {runLog.length ? (
+                  <ul className="log-list">
+                    {runLog.map((entry, index) => (
+                      <li key={`${entry}-${index}`}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="empty-state empty-state-card">Run activity will appear here.</div>
+                )}
+              </div>
             ) : (
               <div className="empty-state empty-state-card">
-                Query results will appear here after you load a file and run SQL.
+                {activeTab === "plan"
+                  ? "Run EXPLAIN to inspect a plan tree."
+                  : "Query results will appear here after you load a file and run SQL."}
               </div>
             )}
           </div>

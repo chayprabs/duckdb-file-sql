@@ -10,6 +10,7 @@ import {
   deriveTableName,
   detectFileKind,
   type BrowserColumn,
+  type BrowserExplainResult,
   type BrowserQueryResult,
   type BrowserSession,
   type BrowserSourceFile,
@@ -106,6 +107,23 @@ class DuckDbBrowserSession implements BrowserSession {
       rowCount: rows.length,
       ranOn: "browser",
       tableNames,
+    };
+  }
+
+  async explain(sql: string, analyze = false): Promise<BrowserExplainResult> {
+    const explainSql = `${analyze ? "EXPLAIN ANALYZE" : "EXPLAIN"} ${sql}`;
+    const startedAt = performance.now();
+    const explainTable = await this.connection.query(explainSql);
+    const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
+    const rows = arrowTableToObjects<Record<string, unknown>>(explainTable).flatMap((row) =>
+      Object.values(row).map((value) => formatExplainRow(value)).filter(Boolean),
+    );
+
+    return {
+      analyze,
+      durationMs,
+      rows,
+      sql,
     };
   }
 
@@ -330,4 +348,12 @@ function quoteIdentifier(value: string): string {
 
 function quoteLiteral(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
+}
+
+function formatExplainRow(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return typeof value === "string" ? value : JSON.stringify(value);
 }

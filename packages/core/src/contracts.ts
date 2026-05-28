@@ -51,11 +51,19 @@ export interface BrowserQueryResult {
   tableNames: string[];
 }
 
+export interface BrowserExplainResult {
+  analyze: boolean;
+  durationMs: number;
+  rows: string[];
+  sql: string;
+}
+
 export interface BrowserSession {
   getVersion(): Promise<string>;
   listTables(): Promise<BrowserTableInfo[]>;
   loadFile(file: BrowserSourceFile): Promise<BrowserTableInfo[]>;
   query(sql: string): Promise<BrowserQueryResult>;
+  explain(sql: string, analyze?: boolean): Promise<BrowserExplainResult>;
   renameTable(currentName: string, nextName: string): Promise<BrowserTableInfo>;
   dropTable(tableName: string): Promise<void>;
   close(): Promise<void>;

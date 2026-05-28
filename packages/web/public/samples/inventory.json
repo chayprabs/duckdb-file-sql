@@ -1,0 +1,5 @@
+[
+  { "sku": "A-100", "warehouse": "east", "stock": 12 },
+  { "sku": "B-200", "warehouse": "west", "stock": 4 },
+  { "sku": "C-300", "warehouse": "central", "stock": 8 }
+]

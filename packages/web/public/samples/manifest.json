@@ -1,0 +1,51 @@
+[
+  {
+    "id": "nyc-taxi-sample",
+    "label": "NYC Taxi Sample",
+    "path": "/samples/nyc-taxi-sample.parquet",
+    "kind": "parquet",
+    "description": "Small taxi rides fixture for COUNT and grouping queries."
+  },
+  {
+    "id": "ecommerce-events",
+    "label": "Ecommerce Events",
+    "path": "/samples/ecommerce-events.csv",
+    "kind": "csv",
+    "description": "CSV fixture for session events and sample joins."
+  },
+  {
+    "id": "weather-jsonl",
+    "label": "Weather Events",
+    "path": "/samples/weather.jsonl",
+    "kind": "jsonl",
+    "description": "JSONL fixture for schema inference and aggregations."
+  },
+  {
+    "id": "people-tsv",
+    "label": "People TSV",
+    "path": "/samples/people.tsv",
+    "kind": "tsv",
+    "description": "TSV fixture for delimiter handling."
+  },
+  {
+    "id": "inventory-json",
+    "label": "Inventory JSON",
+    "path": "/samples/inventory.json",
+    "kind": "json",
+    "description": "Row-oriented JSON fixture."
+  },
+  {
+    "id": "metrics-arrow",
+    "label": "Metrics Arrow",
+    "path": "/samples/metrics.arrow",
+    "kind": "arrow",
+    "description": "Arrow IPC fixture for browser and worker import testing."
+  },
+  {
+    "id": "chinook-lite",
+    "label": "Chinook Lite",
+    "path": "/samples/chinook.sqlite",
+    "kind": "sqlite",
+    "description": "SQLite fixture for native worker registration tests."
+  }
+]

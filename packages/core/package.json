@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev45.0"
   }
 }

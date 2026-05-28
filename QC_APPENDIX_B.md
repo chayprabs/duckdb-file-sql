@@ -15,6 +15,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - Main-branch CI is green on current commits:
   - `26606693263` for `ac79cee test(web): stabilize smoke service startup`
   - `26606937351` for `4dac375 feat(web): polish the first-run FileSQL interface`
+  - `26607419253` for `3e7f545 fix(release): avoid secret checks in workflow expressions`
 - `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
 - Lighthouse report written to `artifacts/lighthouse.json`.
 - Current gz bundle readings from the latest `pnpm build`:
@@ -86,6 +87,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - npm package release readiness:
   - `packages/core` now has a package-local `README.md`, repository metadata, and a `publish-core` job in `.github/workflows/release.yml`.
   - `npm pack --dry-run` in `packages/core` produced `chayprabs-duckdb-file-sql-0.1.0.tgz` with the expected README, declarations, source files, and package metadata.
+  - `Release` workflow run `26607446202` completed successfully with `publish-core`, `pages`, `deploy-pages`, and `worker-image`.
+  - `publish-core` logged `NPM_TOKEN is not configured; skipping npm publish.` and still completed successfully, so the remaining npm gap is credential + live publish evidence rather than workflow configuration.
 
 ### Qualification items still requiring fresh evidence
 
@@ -169,6 +172,11 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - README screenshots are now checked in at `docs/screenshots/filesql-home.png` and `docs/screenshots/filesql-results.png`.
 - The release workflow now exists on `main` and includes GitHub Pages and GHCR publishing jobs via `workflow_dispatch`.
 - `Release` workflow run `26607031972` succeeded end-to-end on `main`:
+  - `pages` job succeeded
+  - `deploy-pages` job succeeded
+  - `worker-image` job succeeded
+- `Release` workflow run `26607446202` also succeeded end-to-end after the npm publish job was added:
+  - `publish-core` job succeeded and skipped publish cleanly when `NPM_TOKEN` was absent
   - `pages` job succeeded
   - `deploy-pages` job succeeded
   - `worker-image` job succeeded

@@ -1,7 +1,7 @@
 # FileSQL QC Appendix B
 
 Repo: `duckdb-file-sql`  
-Branch: `cursor/file-sql-build`  
+Branch: `main`  
 Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` Section 7.
 
 ## Current Evidence Snapshot
@@ -12,6 +12,9 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - `pnpm test` - passing for workspace packages.
 - `pnpm build` - passing for workspace packages.
 - `python -m pytest` in `apps/worker` - passing, including remote `httpfs` coverage.
+- Main-branch CI is green on current commits:
+  - `26606693263` for `ac79cee test(web): stabilize smoke service startup`
+  - `26606937351` for `4dac375 feat(web): polish the first-run FileSQL interface`
 - `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
 - Lighthouse report written to `artifacts/lighthouse.json`.
 - Current gz bundle readings from the latest `pnpm build`:
@@ -39,6 +42,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `https://chayprabs.github.io/duckdb-file-sql/` returns `200`.
   - HTTPS is enforced on the hosted web URL.
   - Hosted SEO routes confirmed `200`: `/sql-on-csv/`, `/sql-on-jsonl/`, `/sqlite-online-query/`.
+- UI polish on `main` now tightens first-run guidance:
+  - Hero explicitly states local-first execution, read-only SQL, and supported formats.
+  - Empty-state guidance now tells the user exactly how to start: load a file or sample, then run the query.
+  - Panel hierarchy is shorter and more direct: `1. Add data`, `2. Query`, `3. Results`.
 - Hosted worker/API evidence:
   - Public worker tunnel health URL `https://47f35d758bd3a0.lhr.life/health` returns `200` with DuckDB extensions and retention metadata.
   - Public worker query `POST /v1/query` returns `SELECT 1 AS total_rows -> 1`.
@@ -72,11 +79,13 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - Worker benchmark fixture size: `5,476,077,536` bytes (`~5.10 GiB`)
   - Worker p95 over 5 runs: `301 ms`
   - Worker latency gate status: passing
+- GHCR evidence:
+  - `Worker Image` workflow run `26605723557` completed successfully on `main`-aligned workflow configuration.
 
 ### Qualification items still requiring fresh evidence
 
 - npm publish evidence for `@chayprabs/duckdb-file-sql`.
-- ghcr image push evidence.
+- Durable hosted worker/public production-domain evidence beyond the current tunnel-based proof.
 - Final PR qualification evidence.
 
 ## Section 7 Tracking
@@ -151,7 +160,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 ### Release-state notes
 
 - GitHub Pages is now serving the static web build from `gh-pages` at `https://chayprabs.github.io/duckdb-file-sql/`, and the repository homepage has been updated to that URL.
-- The release workflow now includes GitHub Pages and GHCR publishing jobs, but GitHub Actions cannot dispatch it yet because `release.yml` exists only on `cursor/file-sql-build` and is not available on the default branch.
+- The release workflow now exists on `main` and includes GitHub Pages and GHCR publishing jobs via `workflow_dispatch`.
 - The npm package metadata is now aligned to the required name `@chayprabs/duckdb-file-sql`, but the registry currently returns `404` and this machine is not authenticated to npm for publish.
 - Local GHCR publication attempts are currently blocked by a Docker Desktop engine API `500` on `docker login ghcr.io`, so GHCR verification remains external-state dependent.
 

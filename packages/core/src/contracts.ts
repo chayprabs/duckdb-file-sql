@@ -53,6 +53,15 @@ export interface BrowserQueryResult {
   truncationReason: string | null;
 }
 
+export type ExportFormat = "csv" | "json" | "parquet" | "arrow";
+
+export interface BrowserExportArtifact {
+  bytes: Uint8Array;
+  fileName: string;
+  format: ExportFormat;
+  mimeType: string;
+}
+
 export interface BrowserExplainResult {
   analyze: boolean;
   durationMs: number;
@@ -66,6 +75,7 @@ export interface BrowserSession {
   loadFile(file: BrowserSourceFile): Promise<BrowserTableInfo[]>;
   query(sql: string): Promise<BrowserQueryResult>;
   explain(sql: string, analyze?: boolean): Promise<BrowserExplainResult>;
+  exportResult(result: BrowserQueryResult, format: ExportFormat): Promise<BrowserExportArtifact>;
   renameTable(currentName: string, nextName: string): Promise<BrowserTableInfo>;
   dropTable(tableName: string): Promise<void>;
   close(): Promise<void>;

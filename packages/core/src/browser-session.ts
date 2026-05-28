@@ -2,7 +2,7 @@ import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
 import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
 import duckdb_wasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
-import { tableFromIPC } from "apache-arrow";
+import { tableFromArrays, tableFromIPC, tableToIPC } from "apache-arrow";
 
 import type { AsyncDuckDB, AsyncDuckDBConnection, DuckDBBundles } from "@duckdb/duckdb-wasm";
 
@@ -10,7 +10,9 @@ import {
   deriveTableName,
   detectFileKind,
   type BrowserColumn,
+  type BrowserExportArtifact,
   type BrowserExplainResult,
+  type ExportFormat,
   type BrowserQueryResult,
   type BrowserSession,
   type BrowserSourceFile,
@@ -171,6 +173,41 @@ class DuckDbBrowserSession implements BrowserSession {
       rows,
       sql,
     };
+  }
+
+  async exportResult(
+    result: BrowserQueryResult,
+    format: ExportFormat,
+  ): Promise<BrowserExportArtifact> {
+    const fileName = `filesql-result.${format === "arrow" ? "arrow" : format}`;
+    if (format === "arrow") {
+      return {
+        bytes: tableToIPC(buildArrowTableFromResult(result), "file"),
+        fileName,
+        format,
+        mimeType: "application/vnd.apache.arrow.file",
+      };
+    }
+
+    const tempTableName = `__filesql_export_${Date.now()}_${this.fileCounter + 1}`;
+    const exportPath = this.buildRegisteredPath(fileName);
+    try {
+      await this.connection.insertArrowTable(buildArrowTableFromResult(result), {
+        name: tempTableName,
+        create: true,
+      });
+      await this.connection.query(buildCopySql(tempTableName, exportPath, format));
+
+      return {
+        bytes: await this.db.copyFileToBuffer(exportPath),
+        fileName,
+        format,
+        mimeType: EXPORT_MIME_TYPES[format],
+      };
+    } finally {
+      await this.connection.query(`DROP TABLE IF EXISTS ${quoteIdentifier(tempTableName)}`);
+      await this.db.dropFile(exportPath).catch(() => null);
+    }
   }
 
   async renameTable(currentName: string, nextName: string): Promise<BrowserTableInfo> {
@@ -419,4 +456,58 @@ function trimRowsToByteCap(rows: unknown[][]): unknown[][] {
   }
 
   return keptRows;
+}
+
+const EXPORT_MIME_TYPES: Record<Exclude<ExportFormat, "arrow">, string> = {
+  csv: "text/csv;charset=utf-8",
+  json: "application/json",
+  parquet: "application/octet-stream",
+};
+
+function buildCopySql(
+  tableName: string,
+  exportPath: string,
+  format: Exclude<ExportFormat, "arrow">,
+): string {
+  const formatOptions = {
+    csv: "FORMAT CSV, HEADER true",
+    json: "FORMAT JSON",
+    parquet: "FORMAT PARQUET",
+  }[format];
+
+  return `COPY ${quoteIdentifier(tableName)} TO ${quoteLiteral(exportPath)} (${formatOptions})`;
+}
+
+function buildArrowTableFromResult(result: BrowserQueryResult) {
+  const columnNames = uniquifyColumnNames(result.schema.map((column) => column.name));
+  return tableFromArrays(
+    Object.fromEntries(
+      columnNames.map((columnName, columnIndex) => [
+        columnName,
+        result.rows.map((row) => normalizeExportValue(row[columnIndex] ?? null)),
+      ]),
+    ),
+  );
+}
+
+function normalizeExportValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return JSON.stringify(value);
+  }
+
+  if (value && typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return value ?? null;
+}
+
+function uniquifyColumnNames(names: string[]): string[] {
+  const seenNames = new Map<string, number>();
+  return names.map((name, index) => {
+    const baseName = name || `column_${index + 1}`;
+    const seenCount = seenNames.get(baseName) ?? 0;
+    seenNames.set(baseName, seenCount + 1);
+    return seenCount === 0 ? baseName : `${baseName}_${seenCount + 1}`;
+  });
 }

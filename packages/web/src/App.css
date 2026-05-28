@@ -145,6 +145,7 @@ a:hover {
 .toolbar-actions,
 .hint-strip,
 .result-header,
+.result-header-actions,
 .section-heading,
 .tab-strip {
   display: flex;
@@ -226,6 +227,16 @@ button,
 
 .schema-toolbar {
   flex-wrap: wrap;
+}
+
+.result-controls,
+.result-header,
+.result-header-actions {
+  flex-wrap: wrap;
+}
+
+.result-header {
+  justify-content: space-between;
 }
 
 .table-actions {

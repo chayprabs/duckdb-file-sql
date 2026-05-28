@@ -4,11 +4,15 @@ import {
   chooseExecutionModeForFiles,
   createBrowserSession,
   type BrowserExplainResult,
+  createShareUrl,
   detectFileKind,
+  type ExportFormat,
+  FILESQL_DIALECT,
   type BrowserQueryResult,
   type BrowserSession,
   type BrowserTableInfo,
   type FileDescriptor,
+  parseShareState,
   type SupportedFileKind,
 } from "@filesql/core";
 import "./App.css";
@@ -53,6 +57,15 @@ function App() {
 
   useEffect(() => {
     let ignore = false;
+    const sharedState = parseShareState(window.location.search);
+    if (sharedState.sql) {
+      setQuery(sharedState.sql);
+      setStatus(
+        sharedState.dialect === FILESQL_DIALECT
+          ? "Loaded SQL from a shared FileSQL link."
+          : "Loaded SQL from the current URL.",
+      );
+    }
 
     void fetch("/samples/manifest.json")
       .then((response) => response.json() as Promise<SampleManifestItem[]>)
@@ -237,6 +250,48 @@ function App() {
       setTables(nextTables);
       setStatus(`Dropped ${tableName} from the current browser session.`);
       setResult(null);
+    });
+  }
+
+  async function handleCopyShareLink() {
+    const shareUrl = createShareUrl(query, `${window.location.origin}${window.location.pathname}`);
+    await runBusyTask(async () => {
+      window.history.replaceState(null, "", shareUrl);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        window.prompt("Copy FileSQL share link", shareUrl);
+      }
+      setStatus("Copied a share link with the current SQL.");
+      setRunLog((current) => ["Copied share link for current SQL.", ...current].slice(0, 10));
+    });
+  }
+
+  async function handleExport(format: ExportFormat) {
+    if (!result) {
+      return;
+    }
+
+    await runBusyTask(async () => {
+      const session = await ensureBrowserSession();
+      const artifact = await session.exportResult(result, format);
+      const blobBytes = artifact.bytes.slice();
+      const blob = new Blob(
+        [blobBytes.buffer.slice(blobBytes.byteOffset, blobBytes.byteOffset + blobBytes.byteLength)],
+        { type: artifact.mimeType },
+      );
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = artifact.fileName;
+        anchor.click();
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+
+      setStatus(`Downloaded the current result as ${format.toUpperCase()}.`);
+      setRunLog((current) => [`Downloaded result as ${artifact.fileName}.`, ...current].slice(0, 10));
     });
   }
 
@@ -458,6 +513,9 @@ function App() {
               <h2>Write SQL against the current browser session.</h2>
             </div>
             <div className="toolbar-actions">
+              <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleCopyShareLink()}>
+                Copy share link
+              </button>
               <button type="button" className="ghost" disabled={isBusy || !tables.length} onClick={() => void handleExplain(false)}>
                 Explain
               </button>
@@ -506,7 +564,21 @@ function App() {
                   <span>
                     {sortedRows.length} visible row{sortedRows.length === 1 ? "" : "s"}
                   </span>
-                  <span>{result.durationMs} ms</span>
+                  <div className="result-header-actions">
+                    <span>{result.durationMs} ms</span>
+                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("csv")}>
+                      CSV
+                    </button>
+                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("json")}>
+                      JSON
+                    </button>
+                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("parquet")}>
+                      Parquet
+                    </button>
+                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("arrow")}>
+                      Arrow
+                    </button>
+                  </div>
                 </div>
                 {result.truncated && result.truncationReason ? (
                   <p className="truncation-banner">{result.truncationReason}</p>

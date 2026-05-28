@@ -16,6 +16,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `26606693263` for `ac79cee test(web): stabilize smoke service startup`
   - `26606937351` for `4dac375 feat(web): polish the first-run FileSQL interface`
   - `26607419253` for `3e7f545 fix(release): avoid secret checks in workflow expressions`
+  - `26607641818` for `e4e9d54 test(worker): harden log redaction coverage`
+  - `26607707854` for `be9ae36 chore(security): add security baseline artifacts`
 - `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
 - Lighthouse report written to `artifacts/lighthouse.json`.
 - Current gz bundle readings from the latest `pnpm build`:
@@ -60,9 +62,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - Browser lazy-load: no DuckDB-WASM requests before first sample load; DuckDB-WASM assets requested after first sample load.
   - Browser-mode query network silence: no network requests fired while running the NYC taxi browser query after the sample was loaded.
   - Worker retention policy: health endpoint reports `retentionTtlSeconds = 600`.
+  - Local `/.well-known/security.txt` returned `200` with `Contact`, `Policy`, and `Canonical` fields present.
   - Format counts: CSV `4`, JSONL `3`, JSON `3`, TSV `3`, Parquet `4`, Arrow `3`, SQLite `3`.
   - Remote worker URL count: `4` with worker badge present.
-  - A1 NYC taxi `SELECT COUNT(*)`: `4` in `95 ms`.
+  - A1 NYC taxi `SELECT COUNT(*)`: `4` in `136 ms`.
   - A2 three-file join rows:
     - `east | 2 | 3`
     - `midwest | 1 | 1`
@@ -95,6 +98,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `packages/web/public/.well-known/security.txt` is now checked in for the hosted site.
   - `.github/dependabot.yml` now covers npm, pip, Docker, and GitHub Actions.
   - `.github/workflows/codeql.yml` now scans `javascript-typescript` and `python` on `main`, PRs, and a weekly schedule.
+  - `CodeQL` workflow run `26607707851` completed successfully for both `javascript-typescript` and `python`.
 
 ### Qualification items still requiring fresh evidence
 
@@ -143,7 +147,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [x] Browser 100 MB latency gate
 - [x] Worker 5 GB latency gate
 - [ ] Remaining privacy and security evidence
-- [ ] Coverage and additional test evidence
+- [x] Remaining privacy and security evidence
+- [x] Coverage and additional test evidence
 - [ ] Deployment evidence
 - [x] Hosted web URL + HTTPS evidence
 - [x] Hosted worker API evidence

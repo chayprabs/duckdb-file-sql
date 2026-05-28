@@ -46,6 +46,9 @@ const report = {
     workerRetentionTtlSeconds: null,
     workerActiveArtifacts: null,
   },
+  security: {
+    localSecurityTxt: null,
+  },
   counts: [],
   acceptance: {},
 };
@@ -78,6 +81,7 @@ async function main() {
       await verifySqliteSample(browser);
       await verifyRemoteUrl(browser);
       await verifyPrivacy(browser);
+      await verifySecurityArtifacts();
       await verifyA1(browser);
       await verifyA2(browser);
       await verifyA3(browser);
@@ -169,6 +173,17 @@ async function verifyPrivacy(browser) {
   const healthPayload = await healthResponse.json();
   report.privacy.workerRetentionTtlSeconds = healthPayload.retentionTtlSeconds ?? null;
   report.privacy.workerActiveArtifacts = healthPayload.activeArtifacts ?? null;
+}
+
+async function verifySecurityArtifacts() {
+  const securityResponse = await fetch(`${WEB_URL}/.well-known/security.txt`);
+  const securityText = await securityResponse.text();
+  report.security.localSecurityTxt = {
+    ok: securityResponse.ok,
+    contactPresent: /Contact:\s+/i.test(securityText),
+    policyPresent: /Policy:\s+/i.test(securityText),
+    canonicalPresent: /Canonical:\s+/i.test(securityText),
+  };
 }
 
 async function verifyA1(browser) {

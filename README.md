@@ -68,6 +68,18 @@ cd apps/worker && python -m pytest
 
 The web app is a static Vite build in `packages/web/dist`. The worker is a FastAPI service and the repo ships `docker-compose.yml` for the hybrid local run path.
 
+For a public worker deployment, the repo now includes a root `render.yaml` Blueprint that publishes `apps/worker` as a Docker-backed Render web service with `/health` checks and the same `FILESQL_RETENTION_MINUTES=10` default used in local compose. The hosted GitHub Pages frontend can call that public worker by pasting the worker base URL into the "Remote URL / Worker" panel.
+
+Typical Render flow:
+
+```bash
+git add render.yaml
+git commit -m "Add Render deployment configuration"
+git push origin main
+```
+
+Then open the repo in Render Blueprint mode and apply the `filesql-worker` service definition from `render.yaml`.
+
 ## License
 
 - Root repo, `packages/core`, and `packages/web`: MIT.

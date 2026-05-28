@@ -162,6 +162,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 ### Release-state notes
 
 - GitHub Pages is now serving the static web build from `gh-pages` at `https://chayprabs.github.io/duckdb-file-sql/`, and the repository homepage has been updated to that URL.
+- Root `render.yaml` is now checked in for a reproducible Render Blueprint deployment of the public FastAPI worker from `apps/worker`.
 - The release workflow now exists on `main` and includes GitHub Pages and GHCR publishing jobs via `workflow_dispatch`.
 - `Release` workflow run `26607031972` succeeded end-to-end on `main`:
   - `pages` job succeeded

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: filesql-worker
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    dockerfilePath: ./apps/worker/Dockerfile
+    dockerContext: ./apps/worker
+    envVars:
+      - key: FILESQL_RETENTION_MINUTES
+        value: "10"

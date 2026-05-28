@@ -21,6 +21,20 @@
     "description": "JSONL fixture for schema inference and aggregations."
   },
   {
+    "id": "customer-profiles",
+    "label": "Customer Profiles",
+    "path": "/samples/customer-profiles.json",
+    "kind": "json",
+    "description": "JSON fixture that joins on ecommerce user_id."
+  },
+  {
+    "id": "city-tiers",
+    "label": "City Tiers",
+    "path": "/samples/city-tiers.tsv",
+    "kind": "tsv",
+    "description": "TSV fixture that joins on ecommerce city."
+  },
+  {
     "id": "people-tsv",
     "label": "People TSV",
     "path": "/samples/people.tsv",

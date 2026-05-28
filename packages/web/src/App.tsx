@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
   BROWSER_FILE_BUDGET_BYTES,
+  type BrowserColumn,
   chooseExecutionModeForFiles,
   createBrowserSession,
   type BrowserExplainResult,
   createShareUrl,
+  deriveTableName,
   detectFileKind,
   type ExportFormat,
   FILESQL_DIALECT,
@@ -29,6 +31,36 @@ type SampleManifestItem = {
 const budgetInGb = `${Math.round(BROWSER_FILE_BUDGET_BYTES / 1024 / 1024 / 1024)} GB`;
 const defaultQuery = `SELECT COUNT(*) AS total_rows\nFROM nyc_taxi_sample;`;
 const RESULT_PAGE_SIZE = 25;
+const workerBaseUrl = import.meta.env.VITE_FILESQL_WORKER_URL ?? "/api";
+
+type RemoteTableSource = {
+  kind: SupportedFileKind;
+  name: string;
+  source: string;
+};
+
+type WorkerQueryResponse = {
+  durationMs: number;
+  page: number;
+  pageSize: number;
+  ranOn: "worker";
+  rows: unknown[][];
+  schema: BrowserColumn[];
+  tables: string[];
+  truncated: boolean;
+};
+
+type AppQueryResult = {
+  durationMs: number;
+  pageSize?: number;
+  ranOn: "browser" | "worker";
+  rowCount: number;
+  rows: unknown[][];
+  schema: BrowserColumn[];
+  tableNames: string[];
+  truncated: boolean;
+  truncationReason: string | null;
+};
 
 function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -38,7 +70,10 @@ function App() {
   const [samples, setSamples] = useState<SampleManifestItem[]>([]);
   const [query, setQuery] = useState(defaultQuery);
   const [tables, setTables] = useState<BrowserTableInfo[]>([]);
-  const [result, setResult] = useState<BrowserQueryResult | null>(null);
+  const [remoteSources, setRemoteSources] = useState<RemoteTableSource[]>([]);
+  const [remoteUrl, setRemoteUrl] = useState("");
+  const [remoteKind, setRemoteKind] = useState<SupportedFileKind>("parquet");
+  const [result, setResult] = useState<AppQueryResult | null>(null);
   const [plan, setPlan] = useState<BrowserExplainResult | null>(null);
   const [engineVersion, setEngineVersion] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -185,8 +220,10 @@ function App() {
 
   async function handleRunQuery() {
     await runBusyTask(async () => {
-      const session = await ensureBrowserSession();
-      const queryResult = await session.query(query);
+      const queryResult =
+        engineMode === "worker" && remoteSources.length
+          ? await runWorkerQuery(query, remoteSources)
+          : await (await ensureBrowserSession()).query(query);
       setResult(queryResult);
       setPlan(null);
       setActiveTab("result");
@@ -194,17 +231,20 @@ function App() {
       setPage(0);
       setSortState(null);
       setStatus(
-        `Executed in browser with ${queryResult.rowCount} row${queryResult.rowCount === 1 ? "" : "s"} returned.`,
+        `Executed in ${queryResult.ranOn} mode with ${queryResult.rowCount} row${queryResult.rowCount === 1 ? "" : "s"} returned.`,
       );
       setRunLog((current) => [
-        `Executed query against ${queryResult.tableNames.join(", ") || "current session"} in ${queryResult.durationMs} ms.`,
+        `Executed query against ${queryResult.tableNames.join(", ") || "current session"} in ${queryResult.durationMs} ms on ${queryResult.ranOn}.`,
         ...current,
       ].slice(0, 10));
       const truncationReason = queryResult.truncationReason;
       if (queryResult.truncated && truncationReason) {
         setRunLog((current) => [truncationReason, ...current].slice(0, 10));
       }
-      setTables(await session.listTables());
+      if (queryResult.ranOn === "browser") {
+        const session = await ensureBrowserSession();
+        setTables(await session.listTables());
+      }
     });
   }
 
@@ -268,13 +308,13 @@ function App() {
   }
 
   async function handleExport(format: ExportFormat) {
-    if (!result) {
+    if (!result || result.ranOn !== "browser") {
       return;
     }
 
     await runBusyTask(async () => {
       const session = await ensureBrowserSession();
-      const artifact = await session.exportResult(result, format);
+      const artifact = await session.exportResult(result as BrowserQueryResult, format);
       const blobBytes = artifact.bytes.slice();
       const blob = new Blob(
         [blobBytes.buffer.slice(blobBytes.byteOffset, blobBytes.byteOffset + blobBytes.byteLength)],
@@ -293,6 +333,44 @@ function App() {
       setStatus(`Downloaded the current result as ${format.toUpperCase()}.`);
       setRunLog((current) => [`Downloaded result as ${artifact.fileName}.`, ...current].slice(0, 10));
     });
+  }
+
+  function handleAddRemoteUrl() {
+    const trimmedUrl = remoteUrl.trim();
+    if (!trimmedUrl) {
+      setError("Enter a remote URL first.");
+      return;
+    }
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(trimmedUrl);
+    } catch {
+      setError("Remote URL must be a valid absolute URL.");
+      return;
+    }
+
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      setError("Remote URLs must use http:// or https://.");
+      return;
+    }
+
+    const fileName = parsedUrl.pathname.split("/").pop() || remoteKind;
+    const baseTableName = deriveTableName(fileName);
+    const nextTableName = uniqueRemoteTableName(baseTableName, remoteSources);
+    const nextSource = { kind: remoteKind, name: nextTableName, source: trimmedUrl };
+    setRemoteSources((current) => [...current, nextSource]);
+    setEngineMode("worker");
+    setShowEscalationPrompt(false);
+    setRemoteUrl("");
+    setStatus("Remote URLs route to the worker because browser mode cannot rely on cross-origin fetches.");
+    setRunLog((current) => [`Added remote ${remoteKind.toUpperCase()} source ${trimmedUrl}.`, ...current].slice(0, 10));
+    setQuery(defaultQueryForTable(nextTableName));
+  }
+
+  function handleRemoveRemoteUrl(tableName: string) {
+    setRemoteSources((current) => current.filter((source) => source.name !== tableName));
+    setStatus(`Removed worker URL source ${tableName}.`);
   }
 
   async function runBusyTask(task: () => Promise<void>) {
@@ -334,6 +412,19 @@ function App() {
     currentPage * RESULT_PAGE_SIZE,
     currentPage * RESULT_PAGE_SIZE + RESULT_PAGE_SIZE,
   );
+  const hasQueryableInput = tables.length > 0 || remoteSources.length > 0;
+  const visibleTables = [
+    ...tables,
+    ...remoteSources.map<BrowserTableInfo>((source) => ({
+      columns: [],
+      fileName: source.source,
+      kind: source.kind,
+      name: source.name,
+      rowCount: 0,
+      sample: null,
+      sampleValues: {},
+    })),
+  ];
 
   function toggleSort(columnIndex: number) {
     setPage(0);
@@ -419,6 +510,34 @@ function App() {
               accept=".csv,.tsv,.json,.jsonl,.parquet,.arrow,.sqlite,.sqlite3"
               onChange={(event) => void handleFileSelection(event.target.files)}
             />
+            <div className="remote-url-form">
+              <label className="filter-field">
+                <span>Remote URL (worker only)</span>
+                <input
+                  placeholder="https://example.com/data.parquet"
+                  type="url"
+                  value={remoteUrl}
+                  onChange={(event) => setRemoteUrl(event.target.value)}
+                />
+              </label>
+              <div className="remote-url-actions">
+                <select value={remoteKind} onChange={(event) => setRemoteKind(event.target.value as SupportedFileKind)}>
+                  <option value="csv">CSV</option>
+                  <option value="tsv">TSV</option>
+                  <option value="json">JSON</option>
+                  <option value="jsonl">JSONL</option>
+                  <option value="parquet">Parquet</option>
+                  <option value="arrow">Arrow</option>
+                  <option value="sqlite">SQLite</option>
+                </select>
+                <button type="button" className="ghost" onClick={handleAddRemoteUrl}>
+                  Add remote URL
+                </button>
+              </div>
+              <small className="remote-url-note">
+                Remote URLs always use the worker. Browser mode does not rely on cross-origin fetches for file processing.
+              </small>
+            </div>
           </section>
 
           <section className="panel-section">
@@ -445,7 +564,7 @@ function App() {
             <div className="section-heading">
               <p className="panel-label">Schema</p>
               <div className="schema-toolbar">
-                <span className="table-count">{tables.length} tables</span>
+                <span className="table-count">{visibleTables.length} tables</span>
                 <button type="button" className="ghost-inline" onClick={() => setSchemaCollapsed((value) => !value)}>
                   {schemaCollapsed ? "Expand" : "Collapse"}
                 </button>
@@ -453,8 +572,8 @@ function App() {
             </div>
             {!schemaCollapsed ? (
               <ul className="table-list">
-                {tables.length ? (
-                  tables.map((table) => (
+                {visibleTables.length ? (
+                  visibleTables.map((table) => (
                     <li key={table.name}>
                       <div className="table-card-header">
                         <div>
@@ -465,30 +584,46 @@ function App() {
                           {table.columns.length} cols - {table.rowCount} rows
                         </small>
                       </div>
-                      <div className="table-actions">
-                        <button type="button" className="ghost-inline" onClick={() => void handleRenameTable(table.name)}>
-                          Rename
-                        </button>
-                        <button type="button" className="ghost-inline danger-inline" onClick={() => void handleDropTable(table.name)}>
-                          Drop
-                        </button>
-                      </div>
+                      {remoteSources.some((source) => source.name === table.name) ? (
+                        <div className="table-actions">
+                          <button type="button" className="ghost-inline danger-inline" onClick={() => handleRemoveRemoteUrl(table.name)}>
+                            Remove URL
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="table-actions">
+                          <button type="button" className="ghost-inline" onClick={() => void handleRenameTable(table.name)}>
+                            Rename
+                          </button>
+                          <button type="button" className="ghost-inline danger-inline" onClick={() => void handleDropTable(table.name)}>
+                            Drop
+                          </button>
+                        </div>
+                      )}
                       <p className="table-meta">{table.fileName}</p>
-                      <div className="column-list">
-                        {table.columns.map((column) => (
-                          <span key={`${table.name}-${column.name}`}>
-                            {column.name}: {column.type}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="sample-values">
-                        {table.columns.map((column) => (
-                          <div key={`${table.name}-sample-${column.name}`} className="sample-value-card">
-                            <strong>{column.name}</strong>
-                            <span>{formatCell(table.sampleValues[column.name])}</span>
+                      {table.columns.length ? (
+                        <>
+                          <div className="column-list">
+                            {table.columns.map((column) => (
+                              <span key={`${table.name}-${column.name}`}>
+                                {column.name}: {column.type}
+                              </span>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                          <div className="sample-values">
+                            {table.columns.map((column) => (
+                              <div key={`${table.name}-sample-${column.name}`} className="sample-value-card">
+                                <strong>{column.name}</strong>
+                                <span>{formatCell(table.sampleValues[column.name])}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="empty-state remote-table-note">
+                          Worker URL source. Columns will populate after a query runs against this remote file.
+                        </div>
+                      )}
                       {table.sample ? (
                         <pre className="sample-preview">
                           {JSON.stringify(table.sample, null, 2)}
@@ -522,7 +657,7 @@ function App() {
               <button type="button" className="ghost" disabled={isBusy || !tables.length} onClick={() => void handleExplain(true)}>
                 Explain Analyze
               </button>
-              <button type="button" disabled={isBusy || !tables.length} onClick={() => void handleRunQuery()}>
+              <button type="button" disabled={isBusy || !hasQueryableInput} onClick={() => void handleRunQuery()}>
                 {isBusy ? "Running..." : "Run query"}
               </button>
             </div>
@@ -566,18 +701,24 @@ function App() {
                   </span>
                   <div className="result-header-actions">
                     <span>{result.durationMs} ms</span>
-                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("csv")}>
-                      CSV
-                    </button>
-                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("json")}>
-                      JSON
-                    </button>
-                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("parquet")}>
-                      Parquet
-                    </button>
-                    <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("arrow")}>
-                      Arrow
-                    </button>
+                    {result.ranOn === "browser" ? (
+                      <>
+                        <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("csv")}>
+                          CSV
+                        </button>
+                        <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("json")}>
+                          JSON
+                        </button>
+                        <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("parquet")}>
+                          Parquet
+                        </button>
+                        <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleExport("arrow")}>
+                          Arrow
+                        </button>
+                      </>
+                    ) : (
+                      <span className="table-meta">Worker result</span>
+                    )}
                   </div>
                 </div>
                 {result.truncated && result.truncationReason ? (
@@ -699,6 +840,55 @@ function tablesFromFileName(fileName: string): string {
 
 function defaultQueryForTable(tableName: string): string {
   return `SELECT COUNT(*) AS total_rows\nFROM ${tableName};`;
+}
+
+async function runWorkerQuery(sql: string, tables: RemoteTableSource[]): Promise<AppQueryResult> {
+  const response = await fetch(`${workerBaseUrl}/v1/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sql,
+      tables,
+    }),
+  });
+
+  const payload: unknown = await response.json();
+  if (!response.ok) {
+    const errorDetail =
+      payload && typeof payload === "object" && "detail" in payload && typeof payload.detail === "string"
+        ? payload.detail
+        : "Worker query failed.";
+    throw new Error(errorDetail);
+  }
+
+  const workerPayload = payload as WorkerQueryResponse;
+
+  return {
+    durationMs: workerPayload.durationMs,
+    pageSize: workerPayload.pageSize,
+    ranOn: "worker",
+    rowCount: workerPayload.rows.length,
+    rows: workerPayload.rows,
+    schema: workerPayload.schema,
+    tableNames: workerPayload.tables,
+    truncated: workerPayload.truncated,
+    truncationReason: workerPayload.truncated
+      ? `Worker results were truncated to the first ${workerPayload.pageSize} rows for this page.`
+      : null,
+  };
+}
+
+function uniqueRemoteTableName(baseName: string, sources: RemoteTableSource[]): string {
+  const existingNames = new Set(sources.map((source) => source.name));
+  if (!existingNames.has(baseName)) {
+    return baseName;
+  }
+
+  let suffix = 2;
+  while (existingNames.has(`${baseName}_${suffix}`)) {
+    suffix += 1;
+  }
+  return `${baseName}_${suffix}`;
 }
 
 export default App;

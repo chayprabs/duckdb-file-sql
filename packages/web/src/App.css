@@ -158,6 +158,14 @@ a:hover {
   margin-top: 14px;
 }
 
+select {
+  border-radius: 12px;
+  border: 1px solid rgba(245, 243, 237, 0.16);
+  background: rgba(240, 236, 227, 0.06);
+  color: inherit;
+  padding: 10px 12px;
+}
+
 button,
 .status-cluster a {
   border-radius: 999px;
@@ -287,6 +295,23 @@ th {
 .sample-value-card span {
   color: #d3d0c7;
   word-break: break-word;
+}
+
+.remote-url-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.remote-url-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.remote-url-note,
+.remote-table-note {
+  color: #d3d0c7;
 }
 
 .sample-preview {

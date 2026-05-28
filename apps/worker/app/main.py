@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.duckdb_engine import DuckDbEngine
 from app.models import QueryRequest, QueryResponse
@@ -14,6 +15,13 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="FileSQL Worker", version="0.1.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

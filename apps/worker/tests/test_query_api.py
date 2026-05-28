@@ -1,5 +1,8 @@
+import functools
+import http.server
 import json
 import sqlite3
+import threading
 
 import duckdb
 import pyarrow as pa
@@ -97,3 +100,29 @@ def test_query_allows_create_temp_view() -> None:
 
     assert response.status_code == 200
     assert response.json()["rows"] == [[1]]
+
+
+def test_query_supports_remote_httpfs_sources(tmp_path) -> None:
+    csv_path = tmp_path / "remote.csv"
+    csv_path.write_text("id,name\n1,Ada\n2,Grace\n", encoding="utf-8")
+
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=tmp_path.as_posix())
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        remote_url = f"http://127.0.0.1:{server.server_port}/remote.csv"
+
+        with TestClient(app) as client:
+            response = client.post(
+                "/v1/query",
+                json={
+                    "sql": "SELECT COUNT(*) AS total_rows FROM remote_csv",
+                    "tables": [{"name": "remote_csv", "source": remote_url, "kind": "csv"}],
+                },
+            )
+
+        server.shutdown()
+        thread.join(timeout=5)
+
+    assert response.status_code == 200
+    assert response.json()["rows"] == [[2]]

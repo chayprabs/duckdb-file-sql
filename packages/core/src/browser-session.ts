@@ -53,13 +53,15 @@ export async function createBrowserSession(): Promise<BrowserSession> {
 }
 
 class DuckDbBrowserSession implements BrowserSession {
+  private readonly duckdbModule: DuckDbModule;
   private readonly registeredTables = new Map<string, BrowserTableInfo>();
   private readonly attachmentNames = new Set<string>();
   private readonly db: AsyncDuckDB;
   private readonly connection: AsyncDuckDBConnection;
   private fileCounter = 0;
 
-  constructor(_: DuckDbModule, db: AsyncDuckDB, connection: AsyncDuckDBConnection) {
+  constructor(duckdbModule: DuckDbModule, db: AsyncDuckDB, connection: AsyncDuckDBConnection) {
+    this.duckdbModule = duckdbModule;
     this.db = db;
     this.connection = connection;
   }
@@ -82,20 +84,38 @@ class DuckDbBrowserSession implements BrowserSession {
 
     const path = this.buildRegisteredPath(file.name);
     const bytes = new Uint8Array(await file.arrayBuffer());
-    await this.db.registerFileBuffer(path, bytes);
 
     const loadedTables =
       kind === "arrow"
         ? await this.loadArrowFile(path, bytes, file.name, kind)
         : kind === "sqlite"
-          ? await this.loadSqliteFile(path, file.name)
-          : await this.loadTabularFile(path, file.name, kind);
+          ? await this.loadSqliteBrowserFile(path, file, bytes)
+          : (await this.db.registerFileBuffer(path, bytes), await this.loadTabularFile(path, file.name, kind));
 
     for (const table of loadedTables) {
       this.registeredTables.set(table.name, table);
     }
 
     return loadedTables;
+  }
+
+  private async loadSqliteBrowserFile(
+    path: string,
+    file: BrowserSourceFile,
+    bytes: Uint8Array,
+  ): Promise<BrowserTableInfo[]> {
+    if (isFileLike(file)) {
+      await this.db.registerFileHandle(
+        path,
+        file,
+        this.duckdbModule.DuckDBDataProtocol.BROWSER_FILEREADER,
+        true,
+      );
+    } else {
+      await this.db.registerFileBuffer(path, bytes);
+    }
+
+    return this.loadSqliteFile(path, file.name);
   }
 
   async query(sql: string): Promise<BrowserQueryResult> {
@@ -510,4 +530,8 @@ function uniquifyColumnNames(names: string[]): string[] {
     seenNames.set(baseName, seenCount + 1);
     return seenCount === 0 ? baseName : `${baseName}_${seenCount + 1}`;
   });
+}
+
+function isFileLike(value: BrowserSourceFile): value is File {
+  return typeof File !== "undefined" && value instanceof File;
 }

@@ -12,6 +12,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - `pnpm test` - passing for workspace packages.
 - `pnpm build` - passing for workspace packages.
 - `python -m pytest` in `apps/worker` - passing, including remote `httpfs` coverage.
+- `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
 - Current gz bundle readings from the latest `pnpm build`:
   - `index-fHJpapCH.js`: `66.98 kB`
   - `serialization-BaUKPmn5.js`: `43.44 kB`
@@ -33,15 +34,23 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `/sql-on-jsonl/`
   - `/sqlite-online-query/`
   - `/duckdb-online/`
+- Section 7 local harness evidence from `artifacts/section7-report.json`:
+  - Browser lazy-load: no DuckDB-WASM requests before first sample load; DuckDB-WASM assets requested after first sample load.
+  - Format counts: CSV `4`, JSONL `3`, JSON `3`, TSV `3`, Parquet `4`, Arrow `3`, SQLite `3`.
+  - Remote worker URL count: `4` with worker badge present.
+  - A1 NYC taxi `SELECT COUNT(*)`: `4` in `205 ms`.
+  - A2 three-file join rows:
+    - `east | 2 | 3`
+    - `midwest | 1 | 1`
+    - `west | 1 | 3`
+  - A3 oversized file prompt: escalation banner and cancel button both visible.
 
 ### Qualification items still requiring fresh evidence
 
 - Lighthouse >= 95.
 - Browser 100 MB Parquet p95 <= 1 s.
 - Worker 5 GB Parquet p95 <= 20 s.
-- Full Section 7.4 format walk across every sample and remote URL scenario.
-- Acceptance A2 three-file join correctness.
-- Acceptance A3 > 1 GB escalation prompt evidence.
+- Privacy evidence for browser query network silence beyond DuckDB-WASM bootstrap.
 - Hosted URL, npm publish, ghcr image, and PR qualification evidence.
 
 ## Section 7 Tracking
@@ -50,18 +59,18 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 - [x] Standard checks green locally.
 - [x] Bundle budget formally recorded against the 200 KB gz requirement.
-- [ ] DuckDB-WASM lazy-load evidence captured in a reproducible report.
+- [x] DuckDB-WASM lazy-load evidence captured in a reproducible report.
 
 ### 7.4 Functional - Format support
 
-- [ ] CSV
-- [ ] TSV
-- [ ] JSON
-- [ ] JSONL
-- [ ] Parquet
-- [ ] Arrow IPC
-- [ ] SQLite
-- [ ] Remote URL via `httpfs`
+- [x] CSV
+- [x] TSV
+- [x] JSON
+- [x] JSONL
+- [x] Parquet
+- [x] Arrow IPC
+- [x] SQLite
+- [x] Remote URL via `httpfs`
 
 ### 7.5 to 7.12 Functional/UI
 
@@ -81,7 +90,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [ ] Deployment evidence
 - [x] Docs and qualification ledger added in repo
 - [x] SEO route 200 checks
-- [ ] Acceptance fixture evidence
+- [x] Acceptance fixture evidence
 
 ## Notes
 

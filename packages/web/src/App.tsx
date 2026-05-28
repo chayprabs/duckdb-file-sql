@@ -21,6 +21,7 @@ import "./App.css";
 import { SqlEditor } from "./components/SqlEditor";
 
 type SampleManifestItem = {
+  defaultTable?: string;
   id: string;
   label: string;
   path: string;
@@ -138,6 +139,26 @@ function App() {
   }
 
   async function handleSampleLoad(sample: SampleManifestItem) {
+    if (sample.kind === "sqlite") {
+      await runBusyTask(async () => {
+        const tableName = sample.defaultTable ?? deriveTableName(sample.label);
+        const sourceUrl = new URL(sample.path, window.location.origin).toString();
+        const nextSource = [{ kind: "sqlite", name: tableName, source: sourceUrl }] satisfies RemoteTableSource[];
+        setRemoteSources(nextSource);
+        setEngineMode("worker");
+        setResult(null);
+        setPlan(null);
+        setActiveTab("result");
+        setStatus(`Loaded ${sample.label} through the worker SQLite path.`);
+        setRunLog((current) => [
+          `Loaded sample ${sample.label} in worker mode.`,
+          ...current,
+        ].slice(0, 10));
+        setQuery(defaultQueryForTable(tableName));
+      });
+      return;
+    }
+
     await runBusyTask(async () => {
       const response = await fetch(sample.path);
       if (!response.ok) {

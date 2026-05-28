@@ -60,6 +60,7 @@
     "label": "Chinook Lite",
     "path": "/samples/chinook.sqlite",
     "kind": "sqlite",
-    "description": "SQLite fixture for native worker registration tests."
+    "description": "SQLite fixture for native worker registration tests.",
+    "defaultTable": "customers"
   }
 ]

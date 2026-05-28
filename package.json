@@ -7,10 +7,12 @@
     "build": "pnpm -r build",
     "dev:web": "pnpm --filter @filesql/web dev",
     "lint": "pnpm -r lint",
+    "qualify:section7": "node scripts/section7-qualification.mjs",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "playwright": "1.60.0",
     "typescript": "^5.9.3"
   }
 }

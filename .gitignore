@@ -1,0 +1,12 @@
+# Local planning documents intentionally kept out of GitHub
+PRODUCT_REQUIREMENTS.md
+IMPLEMENTATION_HANDOFF.md
+CODEX_GOAL_PROMPT.md
+RELEASE_QUALIFICATION_CHECKLIST.md
+
+# Legacy planning document names
+AGENT_HANDOFF.md
+CODEX_GOLD_PROMPTS.md
+CODEX_GOAL_PROMPTS.md
+QUALIFYING_CRITERIA.md
+[0-3][0-9]_*.md

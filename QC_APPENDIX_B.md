@@ -35,6 +35,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `/sql-on-jsonl/`
   - `/sqlite-online-query/`
   - `/duckdb-online/`
+- Hosted GitHub Pages evidence:
+  - `https://chayprabs.github.io/duckdb-file-sql/` returns `200`.
+  - HTTPS is enforced on the hosted web URL.
+  - Hosted SEO routes confirmed `200`: `/sql-on-csv/`, `/sql-on-jsonl/`, `/sqlite-online-query/`.
 - Docker/local-run evidence:
   - `docker compose config` resolves the worker service with `apps/worker/Dockerfile`, port `8000`, and `FILESQL_RETENTION_MINUTES=10`.
   - `docker compose up -d worker` served `http://127.0.0.1:8000/health` with `{"status":"ok","extensions":["httpfs","sqlite_scanner","json"]}` before Docker Desktop returned a host-side API `500` during cleanup.
@@ -67,7 +71,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 ### Qualification items still requiring fresh evidence
 
-- Hosted deployment evidence for a non-404 web URL and worker API.
+- Hosted worker API evidence.
 - npm publish evidence for `@chayprabs/duckdb-file-sql`.
 - ghcr image push evidence.
 - Final PR qualification evidence.
@@ -115,6 +119,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - [ ] Remaining privacy and security evidence
 - [ ] Coverage and additional test evidence
 - [ ] Deployment evidence
+- [x] Hosted web URL + HTTPS evidence
+- [ ] Hosted worker API evidence
 - [x] Docs and qualification ledger added in repo
 - [x] SEO route 200 checks
 - [x] Repo topics >= 10
@@ -141,9 +147,10 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 ### Release-state notes
 
-- GitHub Pages is enabled in workflow mode with HTTPS enforced at `https://chayprabs.github.io/duckdb-file-sql/`, but it currently returns `404` because no Pages deployment has run from the default branch yet.
+- GitHub Pages is now serving the static web build from `gh-pages` at `https://chayprabs.github.io/duckdb-file-sql/`, and the repository homepage has been updated to that URL.
 - The release workflow now includes GitHub Pages and GHCR publishing jobs, but GitHub Actions cannot dispatch it yet because `release.yml` exists only on `cursor/file-sql-build` and is not available on the default branch.
 - The npm package metadata is now aligned to the required name `@chayprabs/duckdb-file-sql`, but the registry currently returns `404` and this machine is not authenticated to npm for publish.
+- Local GHCR publication attempts are currently blocked by a Docker Desktop engine API `500` on `docker login ghcr.io`, so GHCR verification remains external-state dependent.
 
 ## Notes
 

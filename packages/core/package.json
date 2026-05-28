@@ -33,6 +33,6 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.33.1-dev45.0",
-    "apache-arrow": "17.0.0"
+    "apache-arrow": "21.1.0"
   }
 }

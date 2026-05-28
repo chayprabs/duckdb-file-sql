@@ -474,9 +474,18 @@ function App() {
           <p className="eyebrow">Hybrid DuckDB playground</p>
           <h1>FileSQL</h1>
           <p className="topbar-copy">
-            Query CSV, JSON, JSONL, Parquet, Arrow, and SQLite files with DuckDB in the browser
-            first and a worker fallback for oversized inputs.
+            Run SQL on local files first. Large inputs switch to the worker automatically.
           </p>
+          <div className="quickstart-strip" aria-label="Quick start">
+            <span>1. Add data</span>
+            <span>2. Run SQL</span>
+            <span>3. Export or share</span>
+          </div>
+          <div className="hero-facts" aria-label="Capabilities">
+            <span>Local-first up to {budgetInGb}</span>
+            <span>Read-only SQL guard</span>
+            <span>CSV, JSON, JSONL, Parquet, Arrow, SQLite</span>
+          </div>
         </div>
         <div className="status-cluster">
           <span className="status-badge">Running on {engineMode}</span>
@@ -507,10 +516,10 @@ function App() {
         <aside className="panel panel-left">
           <section className="dropzone">
             <p className="panel-label">Inputs</p>
-            <h2>Drop files, pick a local file, or load a sample fixture.</h2>
+            <h2>1. Add data</h2>
             <p>
-              Files up to {budgetInGb} stay local in the browser. Larger files trigger an
-              escalation prompt before any upload path exists.
+              Choose files, load a sample, or paste a remote URL. Files up to {budgetInGb} stay
+              in the browser.
             </p>
             <div className="dropzone-actions">
               <button type="button" onClick={() => fileInputRef.current?.click()}>
@@ -528,6 +537,10 @@ function App() {
               >
                 Load NYC taxi sample
               </button>
+            </div>
+            <div className="start-hint">
+              <strong>Fastest path:</strong>
+              <span>Load the NYC taxi sample, then press Run query.</span>
             </div>
             <input
               ref={fileInputRef}
@@ -569,7 +582,7 @@ function App() {
                 </button>
               </div>
               <small className="remote-url-note">
-                Remote URLs always use the worker. Browser mode does not rely on cross-origin fetches for file processing.
+                Remote URLs always run on the worker.
               </small>
             </div>
           </section>
@@ -579,6 +592,9 @@ function App() {
               <div>
                 <p className="panel-label">Sample picker</p>
                 <h2>Fixture pack</h2>
+                <p className="section-copy">
+                  Start with a known dataset, then switch to your own files or worker URLs.
+                </p>
               </div>
             </div>
             <ul className="sample-list">
@@ -680,7 +696,10 @@ function App() {
           <div className="editor-toolbar">
             <div>
               <p className="panel-label">SQL editor</p>
-              <h2>Write SQL against the current browser session.</h2>
+              <h2>2. Query</h2>
+              <p className="section-copy">
+                SELECT-only DuckDB SQL with autocomplete, EXPLAIN, share links, and exports.
+              </p>
             </div>
             <div className="toolbar-actions">
               <button type="button" className="ghost" disabled={isBusy} onClick={() => void handleCopyShareLink()}>
@@ -702,20 +721,20 @@ function App() {
             <SqlEditor onRun={() => void handleRunQuery()} onValueChange={setQuery} tables={tables} value={query} />
           ) : (
             <div className="editor-placeholder">
-              <div className="editor-placeholder-copy">
-                <p className="panel-label">Editor standby</p>
-                <h3>Load a file to wake the SQL editor.</h3>
-                <p>
-                  Monaco stays deferred until we have a file, sample, remote URL, or shared SQL to
-                  work with. That keeps the first page load lighter.
-                </p>
-              </div>
+            <div className="editor-placeholder-copy">
+              <p className="panel-label">Editor standby</p>
+              <h3>Load data to start querying.</h3>
+              <p>
+                Choose a file, load a sample, or add a remote worker URL. Monaco stays deferred
+                until then so the first page load stays light.
+              </p>
             </div>
+          </div>
           )}
 
           <div className="hint-strip">
             <span>Cmd+Enter or Ctrl+Enter to run</span>
-            <span>DuckDB-WASM loads lazily on first queryable file</span>
+            <span>DuckDB-WASM loads on first local query</span>
             <span>{status}</span>
           </div>
           {error ? <p className="error-banner">{error}</p> : null}
@@ -725,7 +744,7 @@ function App() {
           <div className="section-heading">
             <div>
               <p className="panel-label">Results</p>
-              <h2>Preview</h2>
+              <h2>3. Results</h2>
             </div>
             <div className="tab-strip">
               <button type="button" className={`tab ${activeTab === "result" ? "active" : ""}`} onClick={() => setActiveTab("result")}>
@@ -860,7 +879,7 @@ function App() {
               <div className="empty-state empty-state-card">
                 {activeTab === "plan"
                   ? "Run EXPLAIN to inspect a plan tree."
-                  : "Query results will appear here after you load a file and run SQL."}
+                  : "Load a sample or file, then press Run query. Rows, plans, and logs will appear here."}
               </div>
             )}
           </div>

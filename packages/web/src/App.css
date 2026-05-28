@@ -1,9 +1,21 @@
 :root {
-  color: #f5f3ed;
+  --bg: #101414;
+  --bg-warm: rgba(246, 150, 64, 0.18);
+  --bg-cool: rgba(40, 120, 110, 0.24);
+  --panel: rgba(15, 19, 19, 0.72);
+  --panel-soft: rgba(245, 243, 237, 0.04);
+  --panel-border: rgba(245, 243, 237, 0.1);
+  --copy: #f5f3ed;
+  --copy-muted: #d3d0c7;
+  --copy-soft: #cae0d4;
+  --accent: rgba(246, 150, 64, 0.2);
+  --accent-border: rgba(246, 150, 64, 0.34);
+  color: var(--copy);
   background:
-    radial-gradient(circle at top left, rgba(246, 150, 64, 0.18), transparent 25%),
-    radial-gradient(circle at bottom right, rgba(40, 120, 110, 0.24), transparent 24%),
-    #101414;
+    radial-gradient(circle at top left, var(--bg-warm), transparent 25%),
+    radial-gradient(circle at bottom right, var(--bg-cool), transparent 24%),
+    var(--bg);
+  font-family: "Segoe UI Variable", "Aptos", "Trebuchet MS", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,6 +30,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  color: var(--copy);
 }
 
 button,
@@ -38,7 +51,9 @@ a:hover {
 }
 
 .app-shell {
-  padding: 24px;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
 }
 
 .topbar,
@@ -55,11 +70,23 @@ a:hover {
   align-items: flex-start;
   gap: 16px;
   margin-bottom: 24px;
+  padding: 8px 0 16px;
 }
 
 .topbar h1,
 .panel h2 {
   margin: 0;
+}
+
+.topbar h1 {
+  font-size: clamp(2.8rem, 5vw, 4.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+.panel h2 {
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  line-height: 1.08;
 }
 
 .eyebrow,
@@ -76,17 +103,58 @@ a:hover {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 320px;
 }
 
 .status-cluster a,
 .ghost-inline {
-  color: #f5f3ed;
+  color: var(--copy);
 }
 
 .topbar-copy,
 .table-meta,
 .query-meta {
-  color: #d3d0c7;
+  color: var(--copy-muted);
+}
+
+.topbar-copy {
+  max-width: 760px;
+  margin-bottom: 0;
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.quickstart-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.quickstart-strip span {
+  border-radius: 999px;
+  border: 1px solid rgba(245, 243, 237, 0.14);
+  background: rgba(245, 243, 237, 0.06);
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: var(--copy-soft);
+}
+
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hero-facts span {
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(135deg, rgba(245, 243, 237, 0.08), rgba(245, 243, 237, 0.03));
+  padding: 10px 12px;
+  color: var(--copy-muted);
+  font-size: 0.86rem;
 }
 
 .status-badge,
@@ -100,7 +168,7 @@ a:hover {
 
 .workspace {
   display: grid;
-  grid-template-columns: 280px minmax(320px, 1fr) 360px;
+  grid-template-columns: 320px minmax(420px, 1.15fr) 360px;
   gap: 18px;
 }
 
@@ -112,12 +180,12 @@ a:hover {
   margin-bottom: 18px;
   padding: 18px;
   border-radius: 24px;
-  border: 1px solid rgba(246, 150, 64, 0.34);
+  border: 1px solid var(--accent-border);
   background: rgba(246, 150, 64, 0.12);
 }
 
 .panel {
-  background: rgba(15, 19, 19, 0.7);
+  background: var(--panel);
   border: 1px solid rgba(245, 243, 237, 0.12);
   border-radius: 24px;
   padding: 18px;
@@ -135,7 +203,7 @@ a:hover {
 .result-card,
 .panel-section,
 .editor-surface {
-  background: rgba(245, 243, 237, 0.04);
+  background: var(--panel-soft);
   border: 1px solid rgba(245, 243, 237, 0.08);
   border-radius: 20px;
   padding: 18px;
@@ -156,6 +224,14 @@ a:hover {
 .dropzone-actions,
 .toolbar-actions {
   margin-top: 14px;
+}
+
+.section-copy {
+  margin: 10px 0 0;
+  color: var(--copy-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  max-width: 36rem;
 }
 
 select {
@@ -181,6 +257,26 @@ button,
 .ghost-inline,
 .tab {
   background: transparent;
+}
+
+.start-hint {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(246, 150, 64, 0.16);
+  background: linear-gradient(135deg, rgba(246, 150, 64, 0.1), rgba(245, 243, 237, 0.03));
+}
+
+.start-hint strong {
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.start-hint span {
+  color: var(--copy-muted);
 }
 
 .ghost-inline {
@@ -260,7 +356,7 @@ button,
 .hint-strip,
 td,
 th {
-  color: #d3d0c7;
+  color: var(--copy-muted);
 }
 
 .column-list {
@@ -311,14 +407,14 @@ th {
 
 .remote-url-note,
 .remote-table-note {
-  color: #d3d0c7;
+  color: var(--copy-muted);
 }
 
 .sample-preview {
   margin: 12px 0 0;
   white-space: pre-wrap;
   font-size: 0.78rem;
-  color: #d3d0c7;
+  color: var(--copy-muted);
 }
 
 .panel-center {
@@ -350,7 +446,7 @@ th {
   min-height: 420px;
   display: grid;
   place-items: center;
-  color: #d3d0c7;
+  color: var(--copy-muted);
 }
 
 .editor-placeholder {
@@ -361,7 +457,7 @@ th {
   border-radius: 20px;
   background:
     linear-gradient(135deg, rgba(246, 150, 64, 0.12), transparent 50%),
-    rgba(245, 243, 237, 0.04);
+    var(--panel-soft);
   border: 1px dashed rgba(245, 243, 237, 0.16);
 }
 
@@ -414,7 +510,7 @@ th {
 }
 
 .tab.active {
-  background: rgba(246, 150, 64, 0.2);
+  background: var(--accent);
 }
 
 .result-table-wrap {
@@ -452,9 +548,9 @@ th {
   margin: 0;
   padding: 14px;
   white-space: pre-wrap;
-  background: rgba(245, 243, 237, 0.04);
+  background: var(--panel-soft);
   border-radius: 16px;
-  color: #d3d0c7;
+  color: var(--copy-muted);
   overflow: auto;
 }
 
@@ -469,12 +565,12 @@ th {
 .log-list li {
   padding: 12px;
   border-radius: 14px;
-  background: rgba(245, 243, 237, 0.04);
-  color: #d3d0c7;
+  background: var(--panel-soft);
+  color: var(--copy-muted);
 }
 
 .empty-state {
-  color: #d3d0c7;
+  color: var(--copy-muted);
 }
 
 .empty-state-card {
@@ -499,6 +595,15 @@ th {
 @media (max-width: 1120px) {
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+  }
+
+  .status-cluster {
+    justify-content: flex-start;
+    max-width: none;
   }
 
   .escalation-banner {

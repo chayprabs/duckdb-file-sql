@@ -127,6 +127,16 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - `python -m pytest` now covers:
   - worker retention TTL cleanup of expired job artifacts
   - worker query logging without SQL body leakage
+- `pnpm test` now covers:
+  - DuckDB-WASM/browser smoke counts across the full sample pack via `packages/web/smoke.test.mjs`
+  - normalized EXPLAIN snapshot coverage for the NYC taxi query plan
+  - worker integration tests with real Parquet and remote `httpfs`
+
+### 7.15 Testing
+
+- [x] DuckDB-WASM smoke tests on each sample
+- [x] Worker integration tests with real Parquet
+- [x] EXPLAIN plan snapshot tests for known queries
 
 ## Notes
 

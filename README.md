@@ -4,6 +4,12 @@ FileSQL runs DuckDB SQL on CSV, JSON, JSONL, Parquet, Arrow, and SQLite files wi
 
 FileSQL is a DuckDB SQL playground for files: drop CSV, JSON, JSONL, Parquet, Arrow, or SQLite into the browser, run joins and EXPLAIN plans locally, and transparently escalate to a native worker when a file is too large or must be fetched remotely. The goal is quick ad-hoc SQL over files without forcing a database setup or defaulting to cloud upload.
 
+## Screenshots
+
+![FileSQL first-run workspace](docs/screenshots/filesql-home.png)
+
+![FileSQL sample query results](docs/screenshots/filesql-results.png)
+
 ## Features
 
 - Browser-first DuckDB-WASM execution for files up to 1 GB.
@@ -79,6 +85,8 @@ git push origin main
 ```
 
 Then open the repo in Render Blueprint mode and apply the `filesql-worker` service definition from `render.yaml`.
+
+Checked-in UI screenshots live under `docs/screenshots/` so the GitHub README mirrors the current product surface instead of mockups.
 
 ## License
 

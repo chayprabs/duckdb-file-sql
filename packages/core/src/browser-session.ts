@@ -2,6 +2,7 @@ import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
 import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
 import duckdb_wasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
+import { tableFromIPC } from "apache-arrow";
 
 import type { AsyncDuckDB, AsyncDuckDBConnection, DuckDBBundles } from "@duckdb/duckdb-wasm";
 
@@ -144,7 +145,7 @@ class DuckDbBrowserSession implements BrowserSession {
   ): Promise<BrowserTableInfo[]> {
     const tableName = deriveTableName(fileName);
     await this.dropExistingTable(tableName);
-    await this.connection.insertArrowFromIPCStream(bytes, { name: tableName, create: true });
+    await this.connection.insertArrowTable(tableFromIPC(bytes), { name: tableName, create: true });
     return [await this.describeTable(tableName, fileName, kind)];
   }
 

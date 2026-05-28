@@ -83,6 +83,9 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - GHCR evidence:
   - `Worker Image` workflow run `26605723557` completed successfully on `main`-aligned workflow configuration.
   - `Release` workflow run `26607031972` also completed a successful `worker-image` publish job on `main`.
+- npm package release readiness:
+  - `packages/core` now has a package-local `README.md`, repository metadata, and a `publish-core` job in `.github/workflows/release.yml`.
+  - `npm pack --dry-run` in `packages/core` produced `chayprabs-duckdb-file-sql-0.1.0.tgz` with the expected README, declarations, source files, and package metadata.
 
 ### Qualification items still requiring fresh evidence
 
@@ -170,6 +173,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `deploy-pages` job succeeded
   - `worker-image` job succeeded
 - The npm package metadata is now aligned to the required name `@chayprabs/duckdb-file-sql`, but the registry currently returns `404` and this machine is not authenticated to npm for publish.
+- The release workflow now includes a `publish-core` job that publishes `@chayprabs/duckdb-file-sql` when `NPM_TOKEN` is configured, and otherwise skips cleanly.
 - Local GHCR publication attempts are currently blocked by a Docker Desktop engine API `500` on `docker login ghcr.io`, so GHCR verification remains external-state dependent.
 
 ## Notes

@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-05-28T21:19:56.254Z",
-  "browser": {
-    "actualBytes": 106950155,
-    "p95Ms": 425,
+  "generatedAt": "2026-05-28T21:21:24.175Z",
+  "browser": null,
+  "worker": {
+    "actualBytes": 5476077536,
+    "p95Ms": 301,
     "samplesMs": [
-      425,
-      190,
-      217,
-      206,
-      154
+      299,
+      301,
+      285,
+      272,
+      268
     ],
     "passed": true,
-    "totalRows": "246772"
+    "totalRows": 12636018
   },
-  "worker": null,
   "thresholds": {
     "browserP95Ms": 1000,
     "workerP95Ms": 20000

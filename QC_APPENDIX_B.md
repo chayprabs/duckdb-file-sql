@@ -57,7 +57,9 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - Browser benchmark fixture size: `106,950,155` bytes (`~102.0 MiB`)
   - Browser p95 over 5 runs: `425 ms`
   - Browser latency gate status: passing
-  - Worker benchmark harness is in place but the 5 GB run is still pending fresh evidence
+  - Worker benchmark fixture size: `5,476,077,536` bytes (`~5.10 GiB`)
+  - Worker p95 over 5 runs: `301 ms`
+  - Worker latency gate status: passing
 
 ### Qualification items still requiring fresh evidence
 
@@ -96,9 +98,9 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 
 ### 7.13 onward
 
-- [ ] Latency gates
+- [x] Latency gates
 - [x] Browser 100 MB latency gate
-- [ ] Worker 5 GB latency gate
+- [x] Worker 5 GB latency gate
 - [ ] Remaining privacy and security evidence
 - [ ] Coverage and additional test evidence
 - [ ] Deployment evidence

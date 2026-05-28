@@ -65,23 +65,32 @@ type AppQueryResult = {
 };
 
 function App() {
+  const initialShareState = getInitialShareState();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sessionRef = useRef<BrowserSession | null>(null);
   const sessionPromiseRef = useRef<Promise<BrowserSession> | null>(null);
 
   const [samples, setSamples] = useState<SampleManifestItem[]>([]);
-  const [query, setQuery] = useState(defaultQuery);
+  const [query, setQuery] = useState(
+    () => initialShareState.sql ?? defaultQuery,
+  );
   const [tables, setTables] = useState<BrowserTableInfo[]>([]);
   const [remoteSources, setRemoteSources] = useState<RemoteTableSource[]>([]);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [remoteKind, setRemoteKind] = useState<SupportedFileKind>("parquet");
-  const [editorEnabled, setEditorEnabled] = useState(false);
+  const [editorEnabled, setEditorEnabled] = useState(() => Boolean(initialShareState.sql));
   const [result, setResult] = useState<AppQueryResult | null>(null);
   const [plan, setPlan] = useState<BrowserExplainResult | null>(null);
   const [engineVersion, setEngineVersion] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [engineMode, setEngineMode] = useState<"browser" | "worker">("browser");
-  const [status, setStatus] = useState("Load a sample or local file to start querying.");
+  const [status, setStatus] = useState(() =>
+    initialShareState.sql
+      ? initialShareState.dialect === FILESQL_DIALECT
+        ? "Loaded SQL from a shared FileSQL link."
+        : "Loaded SQL from the current URL."
+      : "Load a sample or local file to start querying.",
+  );
   const [error, setError] = useState<string | null>(null);
   const [showEscalationPrompt, setShowEscalationPrompt] = useState(false);
   const [schemaCollapsed, setSchemaCollapsed] = useState(false);
@@ -95,17 +104,6 @@ function App() {
 
   useEffect(() => {
     let ignore = false;
-    const sharedState = parseShareState(window.location.search);
-    if (sharedState.sql) {
-      setQuery(sharedState.sql);
-      setEditorEnabled(true);
-      setStatus(
-        sharedState.dialect === FILESQL_DIALECT
-          ? "Loaded SQL from a shared FileSQL link."
-          : "Loaded SQL from the current URL.",
-      );
-    }
-
     void fetch(resolveAppPath("samples/manifest.json"))
       .then((response) => response.json() as Promise<SampleManifestItem[]>)
       .then((payload) => {
@@ -628,6 +626,7 @@ function App() {
                         </div>
                       ) : (
                         <div className="table-actions">
+                          {/* eslint-disable-next-line react-hooks/refs */}
                           <button type="button" className="ghost-inline" onClick={() => void handleRenameTable(table.name)}>
                             Rename
                           </button>
@@ -889,6 +888,10 @@ function tablesFromFileName(fileName: string): string {
 
 function defaultQueryForTable(tableName: string): string {
   return `SELECT COUNT(*) AS total_rows\nFROM ${tableName};`;
+}
+
+function getInitialShareState() {
+  return typeof window === "undefined" ? { dialect: null, sql: null } : parseShareState(window.location.search);
 }
 
 function resolveAppPath(relativePath: string): string {

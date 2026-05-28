@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+app/__init__.py
+app/main.py
+filesql_worker.egg-info/PKG-INFO
+filesql_worker.egg-info/SOURCES.txt
+filesql_worker.egg-info/dependency_links.txt
+filesql_worker.egg-info/requires.txt
+filesql_worker.egg-info/top_level.txt
+tests/test_health.py

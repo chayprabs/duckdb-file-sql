@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,11 +8,6 @@ import { chromium } from "playwright";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..", "..");
-const portOffset = Math.floor(Math.random() * 200);
-const WEB_PORT = 4600 + portOffset;
-const WORKER_PORT = 8300 + portOffset;
-const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
-const WORKER_URL = `http://127.0.0.1:${WORKER_PORT}`;
 
 const SAMPLE_COUNTS = [
   { label: "Ecommerce Events", expected: "4" },
@@ -31,11 +27,15 @@ const EXPECTED_EXPLAIN_SNAPSHOT = [
 ].join("\n");
 
 async function main() {
+  const WEB_PORT = await getAvailablePort();
+  const WORKER_PORT = await getAvailablePort();
+  const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
+  const WORKER_URL = `http://127.0.0.1:${WORKER_PORT}`;
   const cleanup = [];
   const browser = await chromium.launch({ headless: true });
   try {
-    const workerLaunch = getWorkerLaunch();
-    const webLaunch = getWebLaunch();
+    const workerLaunch = getWorkerLaunch(WORKER_PORT);
+    const webLaunch = getWebLaunch(WEB_PORT);
     cleanup.push(
       await startOwnedService(
         `${WORKER_URL}/health`,
@@ -124,7 +124,7 @@ function normalizeExplainSnapshot(planText) {
     .join("\n");
 }
 
-function getWorkerLaunch() {
+function getWorkerLaunch(workerPort) {
   const cwd = path.join(ROOT, "apps", "worker");
   if (process.platform === "win32") {
     return {
@@ -132,7 +132,7 @@ function getWorkerLaunch() {
       args: [
         "-NoProfile",
         "-Command",
-        `python -m uvicorn app.main:app --host 127.0.0.1 --port ${WORKER_PORT}`,
+        `python -m uvicorn app.main:app --host 127.0.0.1 --port ${workerPort}`,
       ],
       cwd,
     };
@@ -140,19 +140,19 @@ function getWorkerLaunch() {
 
   return {
     command: "python3",
-    args: ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", `${WORKER_PORT}`],
+    args: ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", `${workerPort}`],
     cwd,
   };
 }
 
-function getWebLaunch() {
+function getWebLaunch(webPort) {
   if (process.platform === "win32") {
     return {
       command: "powershell",
       args: [
         "-NoProfile",
         "-Command",
-        `pnpm --filter @filesql/web dev -- --host 127.0.0.1 --port ${WEB_PORT}`,
+        `pnpm --filter @filesql/web dev -- --host 127.0.0.1 --port ${webPort} --strictPort`,
       ],
       cwd: ROOT,
     };
@@ -160,9 +160,32 @@ function getWebLaunch() {
 
   return {
     command: "pnpm",
-    args: ["--filter", "@filesql/web", "dev", "--", "--host", "127.0.0.1", "--port", `${WEB_PORT}`],
+    args: ["--filter", "@filesql/web", "dev", "--", "--host", "127.0.0.1", "--port", `${webPort}`, "--strictPort"],
     cwd: ROOT,
   };
+}
+
+async function getAvailablePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close(() => reject(new Error("Unable to determine an available port.")));
+        return;
+      }
+      const { port } = address;
+      server.close((closeError) => {
+        if (closeError) {
+          reject(closeError);
+          return;
+        }
+        resolve(port);
+      });
+    });
+  });
 }
 
 async function startOwnedService(url, name, command, args, extraEnv = {}, cwd = ROOT) {

@@ -65,12 +65,21 @@ a:hover {
 }
 
 .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 16px;
   margin-bottom: 24px;
-  padding: 8px 0 16px;
+  padding: 8px 0 8px;
+}
+
+.hero-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.hero-side {
+  display: grid;
+  gap: 14px;
 }
 
 .topbar h1,
@@ -103,8 +112,7 @@ a:hover {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  max-width: 320px;
+  justify-content: flex-start;
 }
 
 .status-cluster a,
@@ -145,7 +153,6 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 14px;
 }
 
 .hero-facts span {
@@ -164,6 +171,49 @@ a:hover {
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 0.82rem;
+}
+
+.status-badge-browser {
+  background: rgba(40, 120, 110, 0.18);
+}
+
+.status-badge-worker {
+  background: rgba(246, 150, 64, 0.18);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hero-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.hero-card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(245, 243, 237, 0.08);
+  background:
+    linear-gradient(135deg, rgba(245, 243, 237, 0.08), rgba(245, 243, 237, 0.03)),
+    rgba(15, 19, 19, 0.4);
+}
+
+.hero-card strong,
+.onboarding-card h3 {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1.02rem;
+  color: var(--copy);
+}
+
+.hero-card p,
+.onboarding-card p {
+  margin: 0;
+  color: var(--copy-muted);
+  line-height: 1.5;
 }
 
 .workspace {
@@ -469,8 +519,18 @@ th {
 }
 
 .editor-placeholder-copy h3,
-.editor-placeholder-copy p {
+.editor-placeholder-copy p,
+.onboarding-card h3,
+.onboarding-card p {
   margin: 0;
+}
+
+.placeholder-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
 .hint-strip {
@@ -580,6 +640,12 @@ th {
   text-align: center;
 }
 
+.onboarding-card {
+  align-content: center;
+  gap: 10px;
+  justify-items: center;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -598,12 +664,11 @@ th {
   }
 
   .topbar {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .status-cluster {
     justify-content: flex-start;
-    max-width: none;
   }
 
   .escalation-banner {

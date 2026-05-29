@@ -452,6 +452,29 @@ function App() {
       sampleValues: {},
     })),
   ];
+  const primarySample = samples.find((sample) => sample.id === "nyc-taxi-sample") ?? samples[0] ?? null;
+  const loadedSourceCount = visibleTables.length;
+  const loadedSourceLabel = `${loadedSourceCount} source${loadedSourceCount === 1 ? "" : "s"} ready`;
+  const engineSummary =
+    remoteSources.length > 0
+      ? "Remote URLs are queued for the worker path."
+      : engineMode === "worker"
+        ? "Large inputs or worker-only formats now use the native DuckDB service."
+        : `Local files up to ${budgetInGb} stay in the browser by default.`;
+  const nextStepTitle = !hasQueryableInput
+    ? "Load the NYC taxi sample"
+    : !result
+      ? "Run the current SQL"
+      : result.ranOn === "browser"
+        ? "Inspect or export the result"
+        : "Review the worker result";
+  const nextStepCopy = !hasQueryableInput
+    ? "It preloads a COUNT query and gives you the fastest first-run check."
+    : !result
+      ? "The editor is ready. Run the current query or press Cmd/Ctrl+Enter."
+      : result.ranOn === "browser"
+        ? "Sort, filter, explain, or export the rows you just loaded."
+        : "The heavy query completed. Inspect rows here or switch to plan/logs.";
 
   function toggleSort(columnIndex: number) {
     setPage(0);
@@ -470,29 +493,64 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
+        <div className="hero-copy">
           <p className="eyebrow">Hybrid DuckDB playground</p>
           <h1>FileSQL</h1>
           <p className="topbar-copy">
-            Run SQL on local files first. Large inputs switch to the worker automatically.
+            Query files directly with DuckDB. Start with one sample or your own file, then run
+            read-only SQL in the browser until the workload needs the worker.
           </p>
           <div className="quickstart-strip" aria-label="Quick start">
             <span>1. Add data</span>
             <span>2. Run SQL</span>
-            <span>3. Export or share</span>
+            <span>3. Inspect, export, or share</span>
           </div>
           <div className="hero-facts" aria-label="Capabilities">
             <span>Local-first up to {budgetInGb}</span>
             <span>Read-only SQL guard</span>
             <span>CSV, JSON, JSONL, Parquet, Arrow, SQLite</span>
           </div>
+          <div className="hero-actions">
+            {primarySample ? (
+              <button type="button" onClick={() => void handleSampleLoad(primarySample)}>
+                Load NYC taxi sample
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="ghost"
+              disabled={!hasQueryableInput || isBusy}
+              onClick={() => void handleRunQuery()}
+            >
+              Run current SQL
+            </button>
+          </div>
         </div>
-        <div className="status-cluster">
-          <span className="status-badge">Running on {engineMode}</span>
-          {engineVersion ? <span className="status-badge">DuckDB {engineVersion}</span> : null}
-          <a href="https://github.com/chayprabs/duckdb-file-sql" target="_blank" rel="noreferrer">
-            GitHub
-          </a>
+        <div className="hero-side">
+          <div className="status-cluster">
+            <span className={`status-badge status-badge-${engineMode}`}>Running on {engineMode}</span>
+            {engineVersion ? <span className="status-badge">DuckDB {engineVersion}</span> : null}
+            <a href="https://github.com/chayprabs/duckdb-file-sql" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+          </div>
+          <div className="hero-summary" aria-label="Current session summary">
+            <article className="hero-card">
+              <p className="panel-label">Session</p>
+              <strong>{loadedSourceLabel}</strong>
+              <p>{loadedSourceCount ? status : "Choose a file, sample, or remote URL to begin."}</p>
+            </article>
+            <article className="hero-card">
+              <p className="panel-label">Execution path</p>
+              <strong>{engineMode === "browser" ? "Browser-first" : "Worker route"}</strong>
+              <p>{engineSummary}</p>
+            </article>
+            <article className="hero-card">
+              <p className="panel-label">Recommended next step</p>
+              <strong>{nextStepTitle}</strong>
+              <p>{nextStepCopy}</p>
+            </article>
+          </div>
         </div>
       </header>
 
@@ -721,15 +779,25 @@ function App() {
             <SqlEditor onRun={() => void handleRunQuery()} onValueChange={setQuery} tables={tables} value={query} />
           ) : (
             <div className="editor-placeholder">
-            <div className="editor-placeholder-copy">
-              <p className="panel-label">Editor standby</p>
-              <h3>Load data to start querying.</h3>
-              <p>
-                Choose a file, load a sample, or add a remote worker URL. Monaco stays deferred
-                until then so the first page load stays light.
-              </p>
+              <div className="editor-placeholder-copy">
+                <p className="panel-label">Editor standby</p>
+                <h3>Load data, then run the prefilled count query.</h3>
+                <p>
+                  Choose a file, load a sample, or add a remote worker URL. Monaco stays deferred
+                  until then so the first page load stays light.
+                </p>
+                <div className="placeholder-actions">
+                  {primarySample ? (
+                    <button type="button" onClick={() => void handleSampleLoad(primarySample)}>
+                      Load NYC taxi sample
+                    </button>
+                  ) : null}
+                  <button type="button" className="ghost" onClick={() => fileInputRef.current?.click()}>
+                    Choose files
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
           )}
 
           <div className="hint-strip">
@@ -876,10 +944,30 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="empty-state empty-state-card">
-                {activeTab === "plan"
-                  ? "Run EXPLAIN to inspect a plan tree."
-                  : "Load a sample or file, then press Run query. Rows, plans, and logs will appear here."}
+              <div className="empty-state empty-state-card onboarding-card">
+                <p className="panel-label">{activeTab === "plan" ? "Plan pending" : "No result yet"}</p>
+                <h3>
+                  {activeTab === "plan"
+                    ? "Run EXPLAIN to inspect the query plan."
+                    : "Load a file or sample, then run the default count query."}
+                </h3>
+                <p>
+                  {activeTab === "plan"
+                    ? "Once a query is ready, EXPLAIN and EXPLAIN ANALYZE will show the DuckDB plan tree and timings here."
+                    : "FileSQL preloads a simple COUNT query for the first table so you can confirm the import before writing custom SQL."}
+                </p>
+                {activeTab === "result" ? (
+                  <div className="placeholder-actions">
+                    {primarySample ? (
+                      <button type="button" onClick={() => void handleSampleLoad(primarySample)}>
+                        Load NYC taxi sample
+                      </button>
+                    ) : null}
+                    <button type="button" className="ghost" onClick={() => fileInputRef.current?.click()}>
+                      Choose files
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

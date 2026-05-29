@@ -44,6 +44,7 @@ async function main() {
         workerLaunch.args,
         {},
         workerLaunch.cwd,
+        120_000,
       ),
     );
     cleanup.push(
@@ -189,10 +190,10 @@ async function getAvailablePort() {
   });
 }
 
-async function startOwnedService(url, name, command, args, extraEnv = {}, cwd = ROOT) {
+async function startOwnedService(url, name, command, args, extraEnv = {}, cwd = ROOT, timeoutMs = 60_000) {
   const service = await startProcess(name, command, args, extraEnv, cwd);
   try {
-    await waitForUrl(url);
+    await waitForUrl(url, timeoutMs);
     return service.terminate;
   } catch (error) {
     await service.terminate();
@@ -268,8 +269,8 @@ async function terminateChildProcess(child) {
   });
 }
 
-async function waitForUrl(url) {
-  const deadline = Date.now() + 60_000;
+async function waitForUrl(url, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await isUrlReady(url)) {
       return;

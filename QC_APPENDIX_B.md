@@ -21,6 +21,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `26609922492` for `522c0f0 fix(ci): disable premature pnpm cache setup`
   - `26610008157` for `ef9077e docs(qc): record workflow runtime evidence`
   - `26610232867` for `ae0ac14 ci(actions): align workflow actions with green dependency bumps`
+  - `26610387668` for `8cf8586 ci(actions): upgrade docker workflow runtimes`
 - `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
 - Lighthouse report written to `artifacts/lighthouse.json`.
 - Current gz bundle readings from the latest `pnpm build`:
@@ -92,6 +93,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
 - GHCR evidence:
   - `Worker Image` workflow run `26605723557` completed successfully on `main`-aligned workflow configuration.
   - `Release` workflow run `26607031972` also completed a successful `worker-image` publish job on `main`.
+  - `Worker Image` workflow run `26610387663` completed successfully after upgrading the Docker marketplace actions to Node 24-capable majors.
 - npm package release readiness:
   - `packages/core` now has a package-local `README.md`, repository metadata, and a `publish-core` job in `.github/workflows/release.yml`.
   - `npm pack --dry-run` in `packages/core` produced `chayprabs-duckdb-file-sql-0.1.0.tgz` with the expected README, declarations, source files, and package metadata.
@@ -108,7 +110,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `CodeQL` workflow run `26609922455` completed successfully after the GitHub Actions runtime upgrade follow-up.
   - `CodeQL` workflow run `26610008138` completed successfully for the qualification-evidence refresh commit.
   - `CodeQL` workflow run `26610232846` completed successfully after aligning workflow actions with the green Dependabot bumps.
-  - Current GitHub Actions Node 20 deprecation annotations have been reduced further to `docker/build-push-action@v6`, `docker/metadata-action@v5`, and `docker/setup-buildx-action@v3` in the worker-image path; `checkout`, `setup-node`, `setup-python`, `deploy-pages`, and `docker/login-action` are now on current majors.
+  - `CodeQL` workflow run `26610387651` completed successfully after upgrading the remaining Docker marketplace actions.
+  - Current GitHub Actions Node 20 deprecation annotations are cleared from the worker-image path after upgrading `docker/build-push-action` to `v7`, `docker/metadata-action` to `v6`, and `docker/setup-buildx-action` to `v4`.
 
 ### Qualification items still requiring fresh evidence
 

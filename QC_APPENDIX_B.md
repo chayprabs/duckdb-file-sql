@@ -19,6 +19,8 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `26607641818` for `e4e9d54 test(worker): harden log redaction coverage`
   - `26607707854` for `be9ae36 chore(security): add security baseline artifacts`
   - `26609922492` for `522c0f0 fix(ci): disable premature pnpm cache setup`
+  - `26610008157` for `ef9077e docs(qc): record workflow runtime evidence`
+  - `26610232867` for `ae0ac14 ci(actions): align workflow actions with green dependency bumps`
 - `pnpm qualify:section7` - passing local harness execution and writing `artifacts/section7-report.json`.
 - Lighthouse report written to `artifacts/lighthouse.json`.
 - Current gz bundle readings from the latest `pnpm build`:
@@ -50,6 +52,7 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `Release` workflow run `26607031972` rebuilt and redeployed Pages from `main`.
 - UI polish on `main` now tightens first-run guidance:
   - Hero explicitly states local-first execution, read-only SQL, and supported formats.
+  - Hero now includes direct onboarding actions plus a session summary and recommended next step.
   - Empty-state guidance now tells the user exactly how to start: load a file or sample, then run the query.
   - Panel hierarchy is shorter and more direct: `1. Add data`, `2. Query`, `3. Results`.
 - Hosted worker/API evidence:
@@ -103,7 +106,9 @@ Purpose: working qualification ledger for `RELEASE_QUALIFICATION_CHECKLIST.md` S
   - `.github/workflows/codeql.yml` now scans `javascript-typescript` and `python` on `main`, PRs, and a weekly schedule.
   - `CodeQL` workflow run `26607707851` completed successfully for both `javascript-typescript` and `python`.
   - `CodeQL` workflow run `26609922455` completed successfully after the GitHub Actions runtime upgrade follow-up.
-  - Current GitHub Actions Node 20 deprecation annotations have been reduced to the Docker marketplace actions used by the worker image publish path; `checkout`, `setup-node`, and `setup-python` are now on current majors.
+  - `CodeQL` workflow run `26610008138` completed successfully for the qualification-evidence refresh commit.
+  - `CodeQL` workflow run `26610232846` completed successfully after aligning workflow actions with the green Dependabot bumps.
+  - Current GitHub Actions Node 20 deprecation annotations have been reduced further to `docker/build-push-action@v6`, `docker/metadata-action@v5`, and `docker/setup-buildx-action@v3` in the worker-image path; `checkout`, `setup-node`, `setup-python`, `deploy-pages`, and `docker/login-action` are now on current majors.
 
 ### Qualification items still requiring fresh evidence
 
